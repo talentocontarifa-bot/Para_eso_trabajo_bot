@@ -39,7 +39,11 @@ function getScheduledTime(hourStr) {
 // Extraer imagen del HTML usando cheerio
 async function extractOgImage(url) {
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+        });
         const html = await res.text();
         const $ = cheerio.load(html);
         const ogImage = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
