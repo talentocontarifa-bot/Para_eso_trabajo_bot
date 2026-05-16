@@ -135,13 +135,29 @@ async function main() {
         process.exit(1);
     }
 
-    const issues = JSON.parse(issuesJson);
+    let issues = JSON.parse(issuesJson);
     if (issues.length === 0) {
-        console.log("✅ No hay issues pendientes por procesar hoy.");
-        return;
+        console.log("⚠️ No hay issues abiertos. Buscando publicaciones pasadas para reciclar...");
+        try {
+            // Obtenemos hasta 100 issues cerrados para elegir 4 al azar
+            const closedIssuesJson = execSync('gh issue list --state closed --json number,title,body --limit 100').toString();
+            let closedIssues = JSON.parse(closedIssuesJson);
+            
+            if (closedIssues.length === 0) {
+                console.log("✅ Tampoco hay issues cerrados. Nada que hacer.");
+                return;
+            }
+            
+            // Elegir aleatoriamente hasta 4 y marcarlos como reciclados
+            issues = closedIssues.sort(() => 0.5 - Math.random()).slice(0, 4).map(i => ({...i, isRecycled: true}));
+            console.log(`♻️ Se reciclarán ${issues.length} publicaciones pasadas.`);
+        } catch (e) {
+            console.error("❌ Error buscando issues cerrados:", e.message);
+            return;
+        }
+    } else {
+        console.log(`📦 Se encontraron ${issues.length} issues para procesar hoy.`);
     }
-
-    console.log(`📦 Se encontraron ${issues.length} issues para procesar hoy.`);
 
     const urlRegex = /(https?:\/\/[^\s]+)/;
 
@@ -193,10 +209,14 @@ async function main() {
             const postId = await schedulePost(copyText, mediaFbid, scheduledTime);
             console.log(`✅ Post programado con éxito: ${postId}`);
 
-            // E. Cerrar Issue
-            console.log(`🔒 Cerrando issue #${issue.number}...`);
-            execSync(`gh issue close ${issue.number}`);
-            console.log(`✔️ Issue cerrado.`);
+            // E. Cerrar Issue (solo si es nuevo)
+            if (!issue.isRecycled) {
+                console.log(`🔒 Cerrando issue #${issue.number}...`);
+                execSync(`gh issue close ${issue.number}`);
+                console.log(`✔️ Issue cerrado.`);
+            } else {
+                console.log(`♻️ Issue #${issue.number} reciclado (ya estaba cerrado).`);
+            }
 
         } catch (err) {
             console.error(`❌ Error procesando el issue #${issue.number}:`, err.message);
