@@ -96,7 +96,7 @@ async function schedulePost(copyText, mediaFbid, scheduledTime) {
 }
 
 async function generateCopy(issue, productUrl) {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `Eres un copywriter experto en marketing de afiliados.
 Crea un post persuasivo para Facebook vendiendo el siguiente producto de Mercado Libre.
 El post debe ser atractivo, usar emojis, y generar urgencia/deseo.
