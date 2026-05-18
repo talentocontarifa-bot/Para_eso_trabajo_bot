@@ -102,9 +102,12 @@ async function schedulePost(copyText, mediaFbid, scheduledTime) {
 async function generateCopy(issue, productUrl) {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `Eres un copywriter experto en marketing de afiliados.
-Crea un post persuasivo para Facebook vendiendo el siguiente producto de Mercado Libre.
-El post debe ser atractivo, usar emojis, y generar urgencia/deseo.
-MUY IMPORTANTE: DEBES INCLUIR el siguiente link de compra en el texto final: ${productUrl}
+Crea un post corto, directo y persuasivo para Facebook vendiendo el siguiente producto de Mercado Libre.
+REGLAS ESTRICTAS:
+1. Lo PRIMERO que se debe ver en el post es el PRECIO, la PROMOCIÓN y el PORCENTAJE DE DESCUENTO (si lo hay).
+2. El copy de venta no debe superar 1 PÁRRAFO de extensión. Debe ser muy conciso.
+3. Usa emojis para hacerlo visualmente atractivo y generar urgencia o deseo.
+4. MUY IMPORTANTE: DEBES INCLUIR el siguiente link de compra en el texto final: ${productUrl}
 
 Aquí tienes la información enviada por el usuario:
 Título: ${issue.title}
