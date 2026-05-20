@@ -5,8 +5,8 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 require('dotenv').config();
 
-const META_PAGE_ID = process.env.META_PAGE_ID;
-const META_PAGE_ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN;
+const META_PAGE_ID = process.env.META_PAGE_ID || process.env.PAGE_ID;
+const META_PAGE_ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // Inicializa Gemini
@@ -55,7 +55,7 @@ async function extractOgImage(url) {
 }
 
 async function uploadUnpublishedPhoto(imageUrl) {
-    const url = `https://graph.facebook.com/v20.0/${META_PAGE_ID}/photos`;
+    const url = `https://graph.facebook.com/v25.0/${META_PAGE_ID}/photos`;
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,7 +74,7 @@ async function uploadUnpublishedPhoto(imageUrl) {
 }
 
 async function schedulePost(copyText, mediaFbid, scheduledTime) {
-    const url = `https://graph.facebook.com/v20.0/${META_PAGE_ID}/feed`;
+    const url = `https://graph.facebook.com/v25.0/${META_PAGE_ID}/feed`;
     const payload = {
         message: copyText,
         published: false,
@@ -193,7 +193,10 @@ async function main() {
 
             // C. Generar Copy
             console.log(`🧠 Generando copy con Gemini...`);
-            const copyText = await generateCopy(issue, productUrl);
+            let copyText = await generateCopy(issue, productUrl);
+            
+            // Limpiar bloques de código markdown de Gemini
+            copyText = copyText.replace(/^```[a-zA-Z]*\n([\s\S]*?)\n```$/g, '$1').trim();
             
             if (!copyText.includes(productUrl)) {
                 console.warn(`⚠️ Gemini omitió el link, añadiéndolo al final...`);
@@ -203,7 +206,16 @@ async function main() {
 
             // D. Programar Post
             const hourSlot = SCHEDULE_HOURS[i]; // El array tiene máximo 4 elementos
-            const scheduledTime = getScheduledTime(hourSlot);
+            let scheduledTime = getScheduledTime(hourSlot);
+            
+            // Validar que la fecha sea mínimo 15 minutos en el futuro
+            const now = new Date();
+            const minScheduledTime = Math.floor((now.getTime() + 15 * 60 * 1000) / 1000);
+            if (scheduledTime < minScheduledTime) {
+                console.log(`⚠️ La hora programada (${hourSlot}) ya pasó. Ajustando a 15 min en el futuro...`);
+                scheduledTime = minScheduledTime;
+            }
+            
             console.log(`⏰ Programando post para las ${hourSlot} (Timestamp: ${scheduledTime})`);
             
             const postId = await schedulePost(copyText, mediaFbid, scheduledTime);

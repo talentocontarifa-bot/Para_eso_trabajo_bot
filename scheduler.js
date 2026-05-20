@@ -14,7 +14,12 @@ const QUEUE_FILE = path.join(__dirname, 'queue.json');
 
 function scheduleOnFacebook(message, link, scheduledDate) {
   return new Promise((resolve, reject) => {
-    const unixTimestamp = Math.floor(new Date(scheduledDate).getTime() / 1000);
+    let dateStr = scheduledDate;
+    // Si la fecha no especifica zona horaria, forzar zona horaria de México (UTC-6)
+    if (!dateStr.includes('Z') && !dateStr.match(/[+-]\d{2}:?\d{2}$/)) {
+      dateStr += '-06:00';
+    }
+    const unixTimestamp = Math.floor(new Date(dateStr).getTime() / 1000);
 
     const postData = JSON.stringify({
       message,
