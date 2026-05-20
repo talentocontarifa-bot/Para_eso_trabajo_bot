@@ -99,6 +99,24 @@ async function schedulePost(copyText, mediaFbid, scheduledTime) {
     return data.id;
 }
 
+async function callGeminiWithRetry(model, content, maxRetries = 3) {
+    let attempts = 0;
+    while (attempts < maxRetries) {
+        try {
+            return await model.generateContent(content);
+        } catch (error) {
+            attempts++;
+            console.warn(`⚠️ Intento ${attempts} fallido al llamar a Gemini: ${error.message}`);
+            if (attempts >= maxRetries) {
+                throw error;
+            }
+            const waitTime = Math.pow(2, attempts) * 1000;
+            console.log(`Espera de ${waitTime/1000}s antes del próximo intento...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+    }
+}
+
 async function generateCopy(issue, productUrl) {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `Eres un copywriter experto en marketing de afiliados.
@@ -115,7 +133,7 @@ Cuerpo: ${issue.body || 'Sin descripción adicional'}
 
 Solo devuelve el texto final del post (asegúrate de que el link esté ahí), sin notas adicionales.`;
 
-    const result = await model.generateContent(prompt);
+    const result = await callGeminiWithRetry(model, prompt);
     return result.response.text();
 }
 
