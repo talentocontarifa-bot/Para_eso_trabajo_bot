@@ -122,20 +122,53 @@ async function callGeminiWithRetry(model, content, maxRetries = 5) {
     }
 }
 
-async function generateCopy(issue, productUrl) {
-    const prompt = `Eres un copywriter experto en marketing de afiliados.
-Crea un post corto, directo y persuasivo para Facebook vendiendo el siguiente producto de Mercado Libre.
-REGLAS ESTRICTAS:
-1. Lo PRIMERO que se debe ver en el post es el PRECIO, la PROMOCIÓN y el PORCENTAJE DE DESCUENTO (si lo hay).
-2. El copy de venta no debe superar 1 PÁRRAFO de extensión. Debe ser muy conciso.
-3. Usa emojis para hacerlo visualmente atractivo y generar urgencia o deseo.
-4. MUY IMPORTANTE: DEBES INCLUIR el siguiente link de compra en el texto final: ${productUrl}
+// Resolver redirecciones de Mercado Libre (e.g. meli.la)
+async function resolveUrl(url) {
+    try {
+        const response = await fetch(url, { method: 'GET', redirect: 'follow' });
+        return response.url;
+    } catch (e) {
+        console.error(`⚠️ Error resolviendo URL redireccionada: ${e.message}`);
+        return url;
+    }
+}
 
-Aquí tienes la información enviada por el usuario:
-Título: ${issue.title}
-Cuerpo: ${issue.body || 'Sin descripción adicional'}
+// Extraer markdown limpio con Jina Reader
+async function extractProductMarkdown(url) {
+    try {
+        const resolvedUrl = await resolveUrl(url);
+        console.log(`   Scrapeando producto con Jina Reader: ${resolvedUrl}`);
+        const jinaUrl = `https://r.jina.ai/${resolvedUrl}`;
+        const response = await fetch(jinaUrl);
+        if (!response.ok) {
+            throw new Error(`Jina retornó status ${response.status}`);
+        }
+        const text = await response.text();
+        return text.substring(0, 10000); // Limitamos para evitar exceder tokens
+    } catch (e) {
+        console.warn(`⚠️ No se pudo extraer markdown del producto: ${e.message}`);
+        return null;
+    }
+}
 
-Solo devuelve el texto final del post (asegúrate de que el link esté ahí), sin notas adicionales.`;
+async function generateCopy(issue, productUrl, productMarkdown) {
+    const prompt = `Eres un copywriter experto en marketing de afiliados con estilo directo y persuasivo.
+Crea un post corto para Facebook promocionando el siguiente producto de Mercado Libre.
+
+Aquí tienes la información real del producto extraída de la página web (Markdown):
+${productMarkdown ? productMarkdown : "No se pudo extraer información directa del producto."}
+
+Título/Comentario sugerido por el usuario: "${issue.title}"
+Comentario adicional en el issue: "${issue.body || 'Sin descripción adicional'}"
+
+REGLAS DE REDACCIÓN SUPER ESTRICTAS:
+1. Lo PRIMERO que debe verse en el post es el PRECIO ACTUAL, el PRECIO ORIGINAL y el DESCUENTO (si lo hay), todo extraído ÚNICAMENTE de la información real de arriba.
+2. Si la información real (Markdown) NO contiene el precio, NO LO INVENTES. En su lugar, usa una frase ganadora como "¡Checa el precio de locura en el link!" o similar. ESTÁ ESTRICTAMENTE PROHIBIDO HALLUCINAR O INVENTAR NÚMEROS O PRECIOS.
+3. El copy de venta no debe superar 1 PÁRRAFO de extensión. Sé extremadamente conciso.
+4. Usa emojis seleccionados para hacerlo visualmente atractivo y generar urgencia o deseo (ej. 🔥, ⚡, 📦).
+5. MUY IMPORTANTE: DEBES INCLUIR el siguiente link de compra exactamente en el texto final: ${productUrl}
+
+Solo devuelve el texto final del post (asegúrate de que el link esté ahí), sin notas adicionales ni explicaciones.`;
 
     // 1. Intentar con Groq si está disponible
     if (process.env.GROQ_API_KEY) {
@@ -259,17 +292,20 @@ async function main() {
             }
 
             // C. Generar Copy
-            console.log(`🧠 Generando copy con Gemini...`);
-            let copyText = await generateCopy(issue, productUrl);
+            console.log(`🔍 Extrayendo información de la web del producto...`);
+            const productMarkdown = await extractProductMarkdown(productUrl);
+            
+            console.log(`🧠 Generando copy con IA...`);
+            let copyText = await generateCopy(issue, productUrl, productMarkdown);
             
             // Limpiar bloques de código markdown de Gemini
             copyText = copyText.replace(/^```[a-zA-Z]*\n([\s\S]*?)\n```$/g, '$1').trim();
             
             if (!copyText.includes(productUrl)) {
-                console.warn(`⚠️ Gemini omitió el link, añadiéndolo al final...`);
+                console.warn(`⚠️ Omitió el link, añadiéndolo al final...`);
                 copyText += `\n\nComprar aquí: ${productUrl}`;
             }
-            console.log(`📝 Copy generado exitosamente.`);
+            console.log(`📝 COPY GENERADO EXITOSAMENTE:\n-----------------\n${copyText}\n-----------------\n`);
 
             // D. Programar Post
             const hourSlot = SCHEDULE_HOURS[i]; // El array tiene máximo 4 elementos
