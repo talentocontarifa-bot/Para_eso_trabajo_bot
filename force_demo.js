@@ -51,7 +51,6 @@ async function publishPostNow(copyText, mediaFbid) {
 }
 
 async function generateCopy(issue, productUrl) {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const prompt = `Eres un copywriter experto en marketing de afiliados.
 Crea un post corto, directo y persuasivo para Facebook vendiendo el siguiente producto de Mercado Libre.
 REGLAS ESTRICTAS:
@@ -65,6 +64,49 @@ Título: ${issue.title}
 Cuerpo: ${issue.body || 'Sin descripción adicional'}
 
 Solo devuelve el texto final del post (asegúrate de que el link esté ahí), sin notas adicionales.`;
+
+    // 1. Intentar con Groq si está disponible
+    if (process.env.GROQ_API_KEY) {
+        console.log("🧠 Generando copy con Groq (Llama 3.3 70B)...");
+        const models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
+        for (const model of models) {
+            let attempts = 0;
+            while (attempts < 3) {
+                try {
+                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [
+                                { role: "user", content: prompt }
+                            ],
+                            temperature: 0.7
+                        })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        console.log(`✅ Copy generado exitosamente con Groq (${model})`);
+                        return data.choices[0].message.content.trim();
+                    } else {
+                        throw new Error(data.error?.message || "Error de Groq");
+                    }
+                } catch (e) {
+                    attempts++;
+                    console.log(`⚠️ Intento ${attempts} con Groq (${model}) fallido: ${e.message}`);
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            }
+        }
+        console.log("❌ Todos los intentos con Groq fallaron. Pasando a Gemini como respaldo...");
+    }
+
+    // 2. Respaldo a Gemini
+    console.log(`🧠 Generando copy con Gemini...`);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     return result.response.text();
 }
