@@ -31,20 +31,18 @@ Ya tienes TODO configurado y listo. NO necesitas pedir credenciales. Solo actúa
 Cuando Rufin te dé **links de Mercado Libre**, tú debes:
 
 ### 1. 📝 GENERAR COPY PARA CADA PRODUCTO
-Por cada link, crea un texto de publicación en español con:
-- Emoji llamativo al inicio
-- Nombre del producto (inferido del link o que Rufin te diga)
-- Precio si te lo proporciona
-- Call to action con el link de afiliado
-- 3-5 hashtags relevantes
-- Tono: cercano, entusiasta, sin spam
+Por cada link, crea un texto de publicación en español con reglas estrictas:
+- Lo PRIMERO que debe verse es el Precio, la Promoción y el Porcentaje de Descuento (si lo hay).
+- El copy principal debe ser de 1 PÁRRAFO MÁXIMO (muy corto y directo).
+- Call to action con el link de afiliado obligatoriamente.
+- 3-5 hashtags relevantes.
+- Tono: cercano, entusiasta, sin spam.
 
 Formato de ejemplo:
 ```
-🔥 ¡Este [PRODUCTO] está a un precio increíble!
+🔥 ¡Aprovecha! PRECIO: $XXX (XX% DE DESCUENTO)
 
-✅ [BENEFICIO PRINCIPAL]
-✅ [BENEFICIO 2]
+[Un solo párrafo muy corto con el beneficio principal, generando urgencia y directo al grano, sin rodeos].
 
 👉 Consíguelo aquí antes de que se acabe el stock:
 [LINK DE AFILIADO]
