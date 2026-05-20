@@ -99,7 +99,7 @@ async function schedulePost(copyText, mediaFbid, scheduledTime) {
     return data.id;
 }
 
-async function callGeminiWithRetry(model, content, maxRetries = 3) {
+async function callGeminiWithRetry(model, content, maxRetries = 5) {
     let attempts = 0;
     while (attempts < maxRetries) {
         try {
