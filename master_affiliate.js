@@ -234,7 +234,12 @@ async function main() {
             }
 
         } catch (err) {
-            console.error(`❌ Error procesando el issue #${issue.number}:`, err.message);
+            console.error(`❌ Error procesando el issue #${issue.number}:`);
+            if (err.response && err.response.data) {
+                console.error("Detalles del Error (API):", JSON.stringify(err.response.data, null, 2));
+            } else {
+                console.error(err.stack || err);
+            }
         }
     }
     
