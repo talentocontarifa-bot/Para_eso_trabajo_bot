@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&family=Impact&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Montserrat:wght@700;800;900&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -7,8 +7,8 @@
 }
 
 body {
-  background-color: #000;
-  color: #fff;
-  font-family: 'Space Mono', monospace;
+  background-color: #FFE600; /* Fondo amarillo de Mercado Libre */
+  color: #333333;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
   overflow: hidden;
 }

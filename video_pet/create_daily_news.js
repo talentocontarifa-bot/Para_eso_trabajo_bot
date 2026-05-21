@@ -21,10 +21,55 @@ const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 // ─────────────────────────────────────────
 // 1. OBTENER EL ENLACE DEL PRODUCTO DE HOY
 // ─────────────────────────────────────────
-function getRecentProductLink() {
+function getRecentProductData() {
   console.log("🔍 Buscando la oferta de hoy...");
 
-  // A. Intentar obtener el link del issue cerrado más reciente
+  // A. Intentar leer de queue.json
+  const queuePath = path.join(__dirname, '..', 'queue.json');
+  if (fs.existsSync(queuePath)) {
+    try {
+      const queue = JSON.parse(fs.readFileSync(queuePath, 'utf-8'));
+      const items = Array.isArray(queue) ? queue : [];
+
+      if (items.length > 0) {
+        // Obtener fecha de hoy en formato local YYYY-MM-DD (México/Colombia)
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat("en-US", {
+            timeZone: "America/Mexico_City",
+            year: 'numeric', month: '2-digit', day: '2-digit'
+        });
+        const [{ value: month },,{ value: day },,{ value: year }] = formatter.formatToParts(now);
+        const todayStr = `${year}-${month}-${day}`;
+        console.log(`📅 Fecha de hoy (México/Col): ${todayStr}`);
+
+        // 1. Buscar item para hoy
+        const todayItem = items.find(item => item.scheduled_date && item.scheduled_date.startsWith(todayStr));
+        if (todayItem && todayItem.link) {
+          console.log(`🎯 Encontrada oferta de hoy en queue.json (ID: ${todayItem.id}): ${todayItem.producto}`);
+          return { link: todayItem.link, queueItem: todayItem };
+        }
+
+        // 2. Buscar último programado
+        const scheduledItems = items.filter(item => item.status === 'scheduled');
+        if (scheduledItems.length > 0 && scheduledItems[scheduledItems.length - 1].link) {
+          const item = scheduledItems[scheduledItems.length - 1];
+          console.log(`🎯 Encontrada última oferta programada en queue.json (ID: ${item.id}): ${item.producto}`);
+          return { link: item.link, queueItem: item };
+        }
+
+        // 3. Tomar el último del array
+        const lastItem = items[items.length - 1];
+        if (lastItem && lastItem.link) {
+          console.log(`🎯 Usando última oferta en queue.json (ID: ${lastItem.id}): ${lastItem.producto}`);
+          return { link: lastItem.link, queueItem: lastItem };
+        }
+      }
+    } catch (e) {
+      console.error("⚠️ Error leyendo queue.json:", e.message);
+    }
+  }
+
+  // B. Fallback a issues cerrados
   try {
     const closedIssuesJson = execSync('gh issue list --state closed --json number,title,body --limit 5').toString();
     const closedIssues = JSON.parse(closedIssuesJson);
@@ -35,37 +80,17 @@ function getRecentProductLink() {
       if (match) {
         const url = match[1];
         console.log(`🎯 Link encontrado en Issue cerrado #${issue.number}: ${url}`);
-        return url;
+        return { link: url, queueItem: { producto: issue.title, precio: null, descuento: null } };
       }
     }
   } catch (e) {
     console.warn("⚠️ No se pudieron obtener closed issues vía GH CLI.");
   }
 
-  // B. Intentar leer de queue.json
-  const queuePath = path.join(__dirname, '..', 'queue.json');
-  if (fs.existsSync(queuePath)) {
-    try {
-      const queue = JSON.parse(fs.readFileSync(queuePath, 'utf-8'));
-      const items = Array.isArray(queue) ? queue : [];
-
-      if (items.length > 0) {
-        // Tomar el más reciente del queue
-        const lastItem = items[items.length - 1];
-        if (lastItem.link) {
-          console.log(`🎯 Link encontrado en queue.json: ${lastItem.link}`);
-          return lastItem.link;
-        }
-      }
-    } catch (e) {
-      console.error("⚠️ Error leyendo queue.json:", e.message);
-    }
-  }
-
-  // C. Fallback por defecto si no hay nada
+  // C. Fallback por defecto
   const defaultLink = "https://articulo.mercadolibre.com.mx/MLM-1402242137-audifonos-diadema-bluetooth-inalambricos-auriculares-hifi-_JM";
   console.log(`⚠️ No se encontró oferta activa. Usando fallback por defecto: ${defaultLink}`);
-  return defaultLink;
+  return { link: defaultLink, queueItem: { producto: "Audífonos Inalámbricos Bluetooth", precio: "$299", descuento: "50% OFF" } };
 }
 
 // ─────────────────────────────────────────
@@ -262,38 +287,75 @@ async function main() {
     console.log("=========================================");
 
     // 1. Obtener link y hacer scraping
-    const productLink = getRecentProductLink();
+    const { link: productLink, queueItem } = getRecentProductData();
     console.log(`🔗 Oferta destino: ${productLink}`);
 
     const scrapeResult = await scrapeProduct(productLink);
     if (!scrapeResult.success) {
-      throw new Error(`Error en scraping del producto: ${scrapeResult.error}`);
+      console.warn(`⚠️ Scraping falló o fue incompleto: ${scrapeResult.error}. Se continuará con los datos de queue.json.`);
     }
-    console.log(`✅ Scraping exitoso: "${scrapeResult.title}"`);
-    console.log(`   Precio: ${scrapeResult.price} | Descuento: ${scrapeResult.discount}`);
+
+    // Limpiar el título de "(repetición)" y otras marcas innecesarias
+    const rawTitle = queueItem.producto || scrapeResult.title || 'Increíble Producto';
+    const cleanTitle = rawTitle
+      .replace(/\(repetición\)/gi, '')
+      .replace(/ - [^-]+$/g, '') // Quitar nombres largos del final si los hay
+      .trim();
+
+    console.log(`✅ Producto final para el video: "${cleanTitle}"`);
 
     // 2. Descargar imagen
     if (scrapeResult.imageUrl) {
       const destImagePath = path.join(__dirname, 'public', 'product.png');
       await downloadImage(scrapeResult.imageUrl, destImagePath);
     } else {
-      console.warn("⚠️ No se detectó imagen de producto. Se usará un marcador de posición.");
+      console.warn("⚠️ No se detectó imagen de producto en el scraping.");
     }
 
-    // 3. Generar guion y metadatos con IA
-    const metadata = await generateDealMetadata(scrapeResult);
+    // 3. Combinar datos reales para pasárselos a la IA
+    const combinedData = {
+      title: cleanTitle,
+      price: queueItem.precio || scrapeResult.price,
+      originalPrice: scrapeResult.originalPrice,
+      discount: queueItem.descuento || scrapeResult.discount || 'OFERTA',
+      description: scrapeResult.description || queueItem.copy || ''
+    };
 
-    // Sobrescribir precios y descuento reales si el scraping los obtuvo
-    if (scrapeResult.price) {
-      metadata.offer_price = scrapeResult.price.replace(/[$,]/g, '').trim();
+    console.log(`   Precio Oferta: ${combinedData.price} | Descuento: ${combinedData.discount}`);
+
+    // Generar guion y metadatos con IA
+    const metadata = await generateDealMetadata(combinedData);
+
+    // Sobrescribir y limpiar campos clave con valores reales finales
+    metadata.product_title = cleanTitle;
+
+    if (combinedData.price) {
+      metadata.offer_price = combinedData.price.replace(/[$,]/g, '').trim();
     }
-    if (scrapeResult.originalPrice) {
-      metadata.original_price = scrapeResult.originalPrice.replace(/[$,]/g, '').trim();
+    
+    if (combinedData.originalPrice) {
+      metadata.original_price = combinedData.originalPrice.replace(/[$,]/g, '').trim();
+    } else if (combinedData.price && combinedData.discount) {
+      // Calcular precio original estimado a partir del precio de oferta y el descuento
+      try {
+        const cleanPrice = parseFloat(combinedData.price.replace(/[^\d.]/g, ''));
+        const discountPct = parseInt(combinedData.discount.replace(/[^0-9]/g, ''));
+        if (!isNaN(cleanPrice) && !isNaN(discountPct) && discountPct > 0 && discountPct < 100) {
+          const calcOriginal = Math.round(cleanPrice / (1 - discountPct / 100));
+          metadata.original_price = String(calcOriginal);
+          console.log(`   Calculando precio original estimado: $${calcOriginal}`);
+        } else {
+          metadata.original_price = null;
+        }
+      } catch (e) {
+        metadata.original_price = null;
+      }
     } else {
       metadata.original_price = null;
     }
-    if (scrapeResult.discount) {
-      metadata.discount_percentage = parseInt(scrapeResult.discount.replace(/[^0-9]/g, '')) || metadata.discount_percentage;
+
+    if (combinedData.discount) {
+      metadata.discount_percentage = parseInt(combinedData.discount.replace(/[^0-9]/g, '')) || metadata.discount_percentage;
     }
 
     // 4. Generar voz hablada
