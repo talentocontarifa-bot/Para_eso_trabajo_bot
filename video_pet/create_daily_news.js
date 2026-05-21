@@ -135,9 +135,10 @@ Estructura el video en 4 escenas:
 4. "cta": Pantalla de cierre. Requiere 'text' (ej: "¡LINK EN BIO!" o "¡COMPRA HOY!").
 
 Reglas de Redacción del Guion ("script"):
-- Escribe el guion hablado completo que leerá la voz en off, con un tono enérgico, divertido y que conecte con la frase final del canal "¡Para eso trabajo!".
-- El guion debe tener exactamente entre 65 y 80 palabras (duración de locución estimada de 15 a 20 segundos).
-- Debe mencionar explícitamente el producto, el precio actual, y animar al usuario a ir al enlace.
+- Escribe el guion hablado completo que leerá la voz en off, con un tono enérgico, divertido y sumamente persuasivo.
+- El guion DEBE tener una extensión de exactamente entre 75 y 90 palabras para garantizar una duración de 18 a 22 segundos de video.
+- IMPORTANTE: No uses frases de una sola línea. Debes narrar detalladamente los beneficios y características del producto (por ejemplo, hablar de sus componentes, para qué sirve, el gran ahorro, y por qué vale la pena comprarlo hoy mismo).
+- Debe mencionar explícitamente el nombre del producto, el precio actual, el descuento, y hacer un llamado a la acción claro indicando que el link de compra oficial está en la biografía o descripción.
 - Debe terminar obligatoriamente con la frase ganadora: "¡Para eso trabajo!".
 
 Reglas Generales:
@@ -147,16 +148,16 @@ Reglas Generales:
 Responde ÚNICAMENTE con JSON válido:
 {
   "theme_color": "#00FF66",
-  "product_title": "Nombre corto del producto",
-  "discount_percentage": 70,
-  "original_price": "999.00",
-  "offer_price": "298.50",
-  "key_points": ["Punto 1", "Punto 2", "Punto 3"],
-  "script": "El texto del guion de 65 a 80 palabras terminado en ¡Para eso trabajo!",
+  "product_title": "Magnesio Complex",
+  "discount_percentage": 28,
+  "original_price": "499.00",
+  "offer_price": "359.00",
+  "key_points": ["4 tipos de magnesio", "Sueño profundo", "Reduce el estrés"],
+  "script": "¡Atención! Si sufres de estrés, calambres o duermes mal, esto es para ti. Acaba de bajar de precio el Magnesio Complex de Beyond Vitamins. Contiene cuatro tipos de magnesio de alta absorción en un frasco con ciento ochenta cápsulas. Llévatelo hoy mismo por solo trescientos cincuenta y nueve pesos, con un veintiocho por ciento de descuento sobre su precio original de cuatrocientos noventa y nueve pesos. Haz clic en el enlace de nuestra biografía para conseguir el tuyo antes de que se agote. ¡Para eso trabajo!",
   "scenes": [
-    { "type": "title", "text1": "OFERTAZO", "text2": "POWER BANK" },
-    { "type": "image_text", "text": "CARGA ULTRA RÁPIDA" },
-    { "type": "big_percentage", "number": 70, "text": "DE DESCUENTO" },
+    { "type": "title", "text1": "OFERTAZO", "text2": "MAGNESIO" },
+    { "type": "image_text", "text": "SUEÑO PROFUNDO Y SIN ESTRÉS" },
+    { "type": "big_percentage", "number": 28, "text": "DE DESCUENTO" },
     { "type": "cta", "text": "¡LINK EN BIO!" }
   ]
 }`;
