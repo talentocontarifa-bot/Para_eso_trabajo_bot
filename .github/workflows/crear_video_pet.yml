@@ -1,0 +1,63 @@
+name: Crear Video PET
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 15 * * *'  # 9:00 AM America/Mexico_City (UTC-6) / 10:00 AM UTC-5
+
+jobs:
+  render-video:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ffmpeg
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Root dependencies
+        run: npm ci || npm install
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Install video_pet dependencies
+        run: |
+          cd video_pet
+          npm ci || npm install
+
+      - name: Generate Deal Metadata & Voiceover
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd video_pet
+          node create_daily_news.js
+
+      - name: Render Video
+        run: |
+          cd video_pet
+          npx remotion render src/index.ts ParaEsoTrabajoVideo out/video_final_pet.mp4
+
+      - name: Publish to Facebook
+        env:
+          META_PAGE_ID: ${{ secrets.META_PAGE_ID }}
+          META_PAGE_ACCESS_TOKEN: ${{ secrets.META_PAGE_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd video_pet
+          node publish_video.js
+
+      - name: Upload Artifact (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-pet-${{ github.run_number }}
+          path: video_pet/out/video_final_pet.mp4
+          retention-days: 1
