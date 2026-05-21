@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { execSync } = require('child_process');
-const cheerio = require('cheerio');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { scrapeProduct } = require('./scraper');
 
 require('dotenv').config();
 
@@ -36,23 +36,7 @@ function getScheduledTime(hourStr) {
     return timestamp;
 }
 
-// Extraer imagen del HTML usando cheerio
-async function extractOgImage(url) {
-    try {
-        const res = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
-        });
-        const html = await res.text();
-        const $ = cheerio.load(html);
-        const ogImage = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
-        return ogImage;
-    } catch (e) {
-        console.error(`Error extrayendo og:image de ${url}:`, e);
-        return null;
-    }
-}
+// extractOgImage removed. Scraper module extracts image directly.
 
 async function uploadUnpublishedPhoto(imageUrl) {
     const url = `https://graph.facebook.com/v25.0/${META_PAGE_ID}/photos`;
@@ -122,34 +106,7 @@ async function callGeminiWithRetry(model, content, maxRetries = 5) {
     }
 }
 
-// Resolver redirecciones de Mercado Libre (e.g. meli.la)
-async function resolveUrl(url) {
-    try {
-        const response = await fetch(url, { method: 'GET', redirect: 'follow' });
-        return response.url;
-    } catch (e) {
-        console.error(`⚠️ Error resolviendo URL redireccionada: ${e.message}`);
-        return url;
-    }
-}
-
-// Extraer markdown limpio con Jina Reader
-async function extractProductMarkdown(url) {
-    try {
-        const resolvedUrl = await resolveUrl(url);
-        console.log(`   Scrapeando producto con Jina Reader: ${resolvedUrl}`);
-        const jinaUrl = `https://r.jina.ai/${resolvedUrl}`;
-        const response = await fetch(jinaUrl);
-        if (!response.ok) {
-            throw new Error(`Jina retornó status ${response.status}`);
-        }
-        const text = await response.text();
-        return text.substring(0, 10000); // Limitamos para evitar exceder tokens
-    } catch (e) {
-        console.warn(`⚠️ No se pudo extraer markdown del producto: ${e.message}`);
-        return null;
-    }
-}
+// Jina extraction and url resolving functions removed. Replaced by scrapeProduct.
 
 async function generateCopy(issue, productUrl, productMarkdown) {
     const prompt = `Eres un copywriter experto en marketing de afiliados con estilo directo y persuasivo.
@@ -277,24 +234,38 @@ async function main() {
         console.log(`🔗 Link detectado: ${productUrl}`);
 
         try {
-            // A. Extraer imagen
-            let imageUrl = await extractOgImage(productUrl);
+            // A. Realizar scraping del producto con el nuevo scraper unificado
+            const scrapeResult = await scrapeProduct(productUrl);
+            
+            let imageUrl = scrapeResult.imageUrl;
             let mediaFbid = null;
             
             if (imageUrl) {
                 console.log(`🖼️ Imagen extraída: ${imageUrl}`);
                 // B. Subir imagen oculta a Meta
                 console.log(`☁️ Subiendo imagen a Meta...`);
-                mediaFbid = await uploadUnpublishedPhoto(imageUrl);
-                console.log(`✔️ Media FBID obtenido: ${mediaFbid}`);
+                try {
+                    mediaFbid = await uploadUnpublishedPhoto(imageUrl);
+                    console.log(`✔️ Media FBID obtenido: ${mediaFbid}`);
+                } catch (uploadErr) {
+                    console.warn(`⚠️ Falló la subida de la imagen a Meta: ${uploadErr.message}`);
+                }
             } else {
-                console.log(`⚠️ No se pudo extraer og:image. Se publicará solo con el texto/link.`);
+                console.log(`⚠️ No se pudo extraer la imagen del producto. Se publicará solo con el texto/link.`);
             }
 
-            // C. Generar Copy
-            console.log(`🔍 Extrayendo información de la web del producto...`);
-            const productMarkdown = await extractProductMarkdown(productUrl);
-            
+            // C. Formatear la información del producto de manera limpia y estructurada para la IA
+            let productMarkdown = null;
+            if (scrapeResult.success) {
+                productMarkdown = `Título: ${scrapeResult.title}\n`;
+                if (scrapeResult.price) productMarkdown += `Precio Actual: ${scrapeResult.price}\n`;
+                if (scrapeResult.originalPrice) productMarkdown += `Precio Original: ${scrapeResult.originalPrice}\n`;
+                if (scrapeResult.discount) productMarkdown += `Descuento: ${scrapeResult.discount}\n`;
+                productMarkdown += `Descripción:\n${scrapeResult.description || 'Sin descripción disponible.'}`;
+            } else {
+                console.warn(`⚠️ El scraping falló: ${scrapeResult.error}`);
+            }
+
             console.log(`🧠 Generando copy con IA...`);
             let copyText = await generateCopy(issue, productUrl, productMarkdown);
             

@@ -1,26 +1,11 @@
-const cheerio = require('cheerio');
+const { scrapeProduct } = require('./scraper');
 require('dotenv').config();
 
 const META_PAGE_ID = process.env.PAGE_ID;
 const META_PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 const productUrl = 'https://meli.la/1NABPmx';
 
-async function extractOgImage(url) {
-    try {
-        const res = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
-        });
-        const html = await res.text();
-        const $ = cheerio.load(html);
-        const ogImage = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
-        return ogImage;
-    } catch (e) {
-        console.error(`Error extrayendo og:image de ${url}:`, e);
-        return null;
-    }
-}
+// extractOgImage removed. Replaced by scrapeProduct.
 
 async function uploadUnpublishedPhoto(imageUrl) {
     const url = `https://graph.facebook.com/v25.0/${META_PAGE_ID}/photos`;
@@ -61,13 +46,18 @@ async function publishNow(copyText, mediaFbid) {
 
 async function main() {
     console.log("Extrayendo imagen...");
-    const imageUrl = await extractOgImage(productUrl);
+    const scrapeResult = await scrapeProduct(productUrl);
+    const imageUrl = scrapeResult.imageUrl;
     
     let mediaFbid = null;
     if (imageUrl) {
         console.log("Subiendo imagen oculta a Meta...");
-        mediaFbid = await uploadUnpublishedPhoto(imageUrl);
-        console.log("Media FBID:", mediaFbid);
+        try {
+            mediaFbid = await uploadUnpublishedPhoto(imageUrl);
+            console.log("Media FBID:", mediaFbid);
+        } catch (uploadErr) {
+            console.warn("⚠️ Falló la subida de imagen:", uploadErr.message);
+        }
     }
     
     const copyText = `🔥 ¡Mira esta chulada que encontré en Mercado Libre! \n\nNo dejes pasar esta oportunidad. Aprovecha antes de que se acabe el stock. 🏃‍♂️💨\n\n👉 Cómpralo aquí: ${productUrl}`;

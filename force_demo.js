@@ -1,6 +1,6 @@
 const { execSync } = require('child_process');
-const cheerio = require('cheerio');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { scrapeProduct } = require('./scraper');
 require('dotenv').config();
 
 const META_PAGE_ID = process.env.META_PAGE_ID;
@@ -9,16 +9,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-async function extractOgImage(url) {
-    try {
-        const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-        const html = await res.text();
-        const $ = cheerio.load(html);
-        return $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
-    } catch (e) {
-        return null;
-    }
-}
+// extractOgImage removed. Scraper module extracts image directly.
 
 async function uploadUnpublishedPhoto(imageUrl) {
     const url = `https://graph.facebook.com/v20.0/${META_PAGE_ID}/photos`;
@@ -51,34 +42,7 @@ async function publishPostNow(copyText, mediaFbid) {
     return data.id;
 }
 
-// Resolver redirecciones de Mercado Libre (e.g. meli.la)
-async function resolveUrl(url) {
-    try {
-        const response = await fetch(url, { method: 'GET', redirect: 'follow' });
-        return response.url;
-    } catch (e) {
-        console.error(`⚠️ Error resolviendo URL redireccionada: ${e.message}`);
-        return url;
-    }
-}
-
-// Extraer markdown limpio con Jina Reader
-async function extractProductMarkdown(url) {
-    try {
-        const resolvedUrl = await resolveUrl(url);
-        console.log(`   Scrapeando producto con Jina Reader: ${resolvedUrl}`);
-        const jinaUrl = `https://r.jina.ai/${resolvedUrl}`;
-        const response = await fetch(jinaUrl);
-        if (!response.ok) {
-            throw new Error(`Jina retornó status ${response.status}`);
-        }
-        const text = await response.text();
-        return text.substring(0, 10000); // Limitamos para evitar exceder tokens
-    } catch (e) {
-        console.warn(`⚠️ No se pudo extraer markdown del producto: ${e.message}`);
-        return null;
-    }
-}
+// Jina extraction and url resolving functions removed. Replaced by scrapeProduct.
 
 async function generateCopy(issue, productUrl, productMarkdown) {
     const prompt = `Eres un copywriter experto en marketing de afiliados con estilo directo y persuasivo.
@@ -169,12 +133,31 @@ async function main() {
     const match = (issue.body || '').match(/(https?:\/\/[^\s]+)/) || issue.title.match(/(https?:\/\/[^\s]+)/);
     const productUrl = match[1];
 
-    let imageUrl = await extractOgImage(productUrl);
-    let mediaFbid = null;
-    if (imageUrl) mediaFbid = await uploadUnpublishedPhoto(imageUrl);
+    // A. Realizar scraping del producto con el nuevo scraper unificado
+    const scrapeResult = await scrapeProduct(productUrl);
     
-    console.log(`🔍 Extrayendo información de la web del producto...`);
-    const productMarkdown = await extractProductMarkdown(productUrl);
+    let imageUrl = scrapeResult.imageUrl;
+    let mediaFbid = null;
+    if (imageUrl) {
+        console.log(`🖼️ Imagen extraída: ${imageUrl}`);
+        try {
+            mediaFbid = await uploadUnpublishedPhoto(imageUrl);
+        } catch (uploadErr) {
+            console.warn(`⚠️ Falló la subida de la imagen a Meta: ${uploadErr.message}`);
+        }
+    }
+    
+    // B. Formatear la información del producto de manera limpia y estructurada para la IA
+    let productMarkdown = null;
+    if (scrapeResult.success) {
+        productMarkdown = `Título: ${scrapeResult.title}\n`;
+        if (scrapeResult.price) productMarkdown += `Precio Actual: ${scrapeResult.price}\n`;
+        if (scrapeResult.originalPrice) productMarkdown += `Precio Original: ${scrapeResult.originalPrice}\n`;
+        if (scrapeResult.discount) productMarkdown += `Descuento: ${scrapeResult.discount}\n`;
+        productMarkdown += `Descripción:\n${scrapeResult.description || 'Sin descripción disponible.'}`;
+    } else {
+        console.warn(`⚠️ El scraping falló: ${scrapeResult.error}`);
+    }
 
     console.log(`🧠 Generando copy con IA...`);
     let copyText = await generateCopy(issue, productUrl, productMarkdown);
