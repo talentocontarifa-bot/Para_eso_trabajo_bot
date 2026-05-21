@@ -313,12 +313,12 @@ async function main() {
       console.warn("⚠️ No se detectó imagen de producto en el scraping.");
     }
 
-    // 3. Combinar datos reales para pasárselos a la IA
+    // 3. Combinar datos reales para pasárselos a la IA, priorizando los datos frescos del scraper
     const combinedData = {
       title: cleanTitle,
-      price: queueItem.precio || scrapeResult.price,
+      price: scrapeResult.price || queueItem.precio,
       originalPrice: scrapeResult.originalPrice,
-      discount: queueItem.descuento || scrapeResult.discount || 'OFERTA',
+      discount: scrapeResult.discount || queueItem.descuento || 'OFERTA',
       description: scrapeResult.description || queueItem.copy || ''
     };
 
