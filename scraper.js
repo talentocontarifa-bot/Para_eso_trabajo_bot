@@ -102,9 +102,9 @@ async function scrapeWithPlaywright(url) {
                 return el ? el.textContent.trim() : null;
             };
             
-            const title = document.title || getText('h1');
-            const ogImage = getMeta('meta[property="og:image"]') || getMeta('meta[name="twitter:image"]');
-            const ogDescription = getMeta('meta[property="og:description"]') || getMeta('meta[name="description"]');
+            let title = document.title || getText('h1');
+            let ogImage = getMeta('meta[property="og:image"]') || getMeta('meta[name="twitter:image"]');
+            let ogDescription = getMeta('meta[property="og:description"]') || getMeta('meta[name="description"]');
             
             let price = null;
             let originalPrice = null;
@@ -112,28 +112,69 @@ async function scrapeWithPlaywright(url) {
             let description = ogDescription || '';
             
             if (window.location.hostname.includes('mercadolibre.com')) {
-                // Precios
-                const priceFraction = getText('.ui-pdp-price__second-line .andes-money-amount__fraction');
-                const priceCents = getText('.ui-pdp-price__second-line .andes-money-amount__cents') || '';
-                if (priceFraction) {
-                    price = `$${priceFraction.replace(/\./g, '')}${priceCents ? '.' + priceCents : ''}`;
-                }
-                
-                const origFraction = getText('.ui-pdp-price__original-value .andes-money-amount__fraction');
-                const origCents = getText('.ui-pdp-price__original-value .andes-money-amount__cents') || '';
-                if (origFraction) {
-                    originalPrice = `$${origFraction.replace(/\./g, '')}${origCents ? '.' + origCents : ''}`;
-                }
-                
-                discount = getText('.ui-pdp-price__discount');
-                
-                // Descripción
-                const descEl = document.querySelector('.ui-pdp-description__content');
-                if (descEl) {
-                    description = descEl.textContent.trim();
+                // A. CASO PERFIL SOCIAL (/social/)
+                if (window.location.pathname.includes('/social/')) {
+                    const card = document.querySelector('.poly-card');
+                    if (card) {
+                        const titleEl = card.querySelector('.poly-component__title, h2, h3, a[class*="title"]');
+                        if (titleEl) title = titleEl.innerText.trim();
+                        
+                        const imgEl = card.querySelector('img.poly-component__picture, img');
+                        if (imgEl) ogImage = imgEl.src || imgEl.getAttribute('data-src') || ogImage;
+                        
+                        const priceContainer = card.querySelector('.poly-component__price');
+                        if (priceContainer) {
+                            const previousPriceEl = priceContainer.querySelector('.andes-money-amount--previous');
+                            if (previousPriceEl) {
+                                const prevFraction = previousPriceEl.querySelector('.andes-money-amount__fraction');
+                                if (prevFraction) {
+                                    originalPrice = `$${prevFraction.innerText.trim().replace(/\./g, '')}`;
+                                }
+                            }
+                            
+                            const currentPriceEl = priceContainer.querySelector('.andes-money-amount:not(.andes-money-amount--previous)');
+                            if (currentPriceEl) {
+                                const currFraction = currentPriceEl.querySelector('.andes-money-amount__fraction');
+                                const currCents = currentPriceEl.querySelector('.andes-money-amount__cents')?.innerText.trim() || '';
+                                if (currFraction) {
+                                    price = `$${currFraction.innerText.trim().replace(/\./g, '')}${currCents ? '.' + currCents : ''}`;
+                                }
+                            }
+                            
+                            const discountEl = priceContainer.querySelector('.andes-money-amount__discount, [class*="discount"]');
+                            if (discountEl) {
+                                discount = discountEl.innerText.trim();
+                            }
+                        }
+                        description = 'Oferta recomendada en el perfil social de Mercado Libre.';
+                    }
+                } else {
+                    // B. CASO DETALLE DE PRODUCTO (PDP)
+                    const priceFraction = getText('.ui-pdp-price__second-line .andes-money-amount__fraction') || 
+                                          getText('.andes-money-amount:not(.andes-money-amount--previous) .andes-money-amount__fraction');
+                    const priceCents = getText('.ui-pdp-price__second-line .andes-money-amount__cents') || 
+                                        getText('.andes-money-amount:not(.andes-money-amount--previous) .andes-money-amount__cents') || '';
+                    if (priceFraction) {
+                        price = `$${priceFraction.replace(/\./g, '')}${priceCents ? '.' + priceCents : ''}`;
+                    }
+                    
+                    const origFraction = getText('.ui-pdp-price__original-value .andes-money-amount__fraction') || 
+                                         getText('.andes-money-amount--previous .andes-money-amount__fraction');
+                    const origCents = getText('.ui-pdp-price__original-value .andes-money-amount__cents') || 
+                                      getText('.andes-money-amount--previous .andes-money-amount__cents') || '';
+                    if (origFraction) {
+                        originalPrice = `$${origFraction.replace(/\./g, '')}${origCents ? '.' + origCents : ''}`;
+                    }
+                    
+                    discount = getText('.ui-pdp-price__discount') || getText('.andes-money-amount__discount');
+                    
+                    const descEl = document.querySelector('.ui-pdp-description__content');
+                    if (descEl) {
+                        description = descEl.textContent.trim();
+                    }
                 }
             } else {
-                // Genérico
+                // C. GENÉRICO
                 const metaPrice = getMeta('meta[property="og:price:amount"]');
                 if (metaPrice) {
                     const currency = getMeta('meta[property="og:price:currency"]') || 'MXN';

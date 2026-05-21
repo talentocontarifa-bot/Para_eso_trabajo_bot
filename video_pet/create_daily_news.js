@@ -136,7 +136,7 @@ Estructura el video en 4 escenas:
 
 Reglas de Redacción del Guion ("script"):
 - Escribe el guion hablado completo que leerá la voz en off, con un tono enérgico, divertido y que conecte con la frase final del canal "¡Para eso trabajo!".
-- El guion debe durar entre 55 y 65 palabras.
+- El guion debe tener exactamente entre 65 y 80 palabras (duración de locución estimada de 15 a 20 segundos).
 - Debe mencionar explícitamente el producto, el precio actual, y animar al usuario a ir al enlace.
 - Debe terminar obligatoriamente con la frase ganadora: "¡Para eso trabajo!".
 
@@ -152,7 +152,7 @@ Responde ÚNICAMENTE con JSON válido:
   "original_price": "999.00",
   "offer_price": "298.50",
   "key_points": ["Punto 1", "Punto 2", "Punto 3"],
-  "script": "El texto del guion de 55-65 palabras terminado en ¡Para eso trabajo!",
+  "script": "El texto del guion de 65 a 80 palabras terminado en ¡Para eso trabajo!",
   "scenes": [
     { "type": "title", "text1": "OFERTAZO", "text2": "POWER BANK" },
     { "type": "image_text", "text": "CARGA ULTRA RÁPIDA" },
