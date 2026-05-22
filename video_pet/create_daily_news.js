@@ -21,57 +21,61 @@ const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 // ─────────────────────────────────────────
 // 1. OBTENER EL ENLACE DEL PRODUCTO DE HOY
 // ─────────────────────────────────────────
-function getRecentProductData() {
+async function getRecentProductData() {
   console.log("🔍 Buscando la oferta de hoy...");
 
-  // A. Intentar leer de queue.json
+  const PAGE_ID = process.env.META_PAGE_ID || process.env.PAGE_ID;
+  const ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
+
+  // A. Obtener fecha de hoy en formato local YYYY-MM-DD (México/Colombia)
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Mexico_City",
+      year: 'numeric', month: '2-digit', day: '2-digit'
+  });
+  const [{ value: month },,{ value: day },,{ value: year }] = formatter.formatToParts(now);
+  const todayStr = `${year}-${month}-${day}`;
+  console.log(`📅 Fecha de hoy (México/Col): ${todayStr}`);
+
+  // B. Intentar leer queue.json
   const queuePath = path.join(__dirname, '..', 'queue.json');
+  let queueItems = [];
   if (fs.existsSync(queuePath)) {
     try {
       const queue = JSON.parse(fs.readFileSync(queuePath, 'utf-8'));
-      const items = Array.isArray(queue) ? queue : [];
-
-      if (items.length > 0) {
-        // Obtener fecha de hoy en formato local YYYY-MM-DD (México/Colombia)
-        const now = new Date();
-        const formatter = new Intl.DateTimeFormat("en-US", {
-            timeZone: "America/Mexico_City",
-            year: 'numeric', month: '2-digit', day: '2-digit'
-        });
-        const [{ value: month },,{ value: day },,{ value: year }] = formatter.formatToParts(now);
-        const todayStr = `${year}-${month}-${day}`;
-        console.log(`📅 Fecha de hoy (México/Col): ${todayStr}`);
-
-        // 1. Buscar item para hoy
-        const todayItem = items.find(item => item.scheduled_date && item.scheduled_date.startsWith(todayStr));
-        if (todayItem && todayItem.link) {
-          console.log(`🎯 Encontrada oferta de hoy en queue.json (ID: ${todayItem.id}): ${todayItem.producto}`);
-          return { link: todayItem.link, queueItem: todayItem };
-        }
-
-        // 2. Buscar último programado
-        const scheduledItems = items.filter(item => item.status === 'scheduled');
-        if (scheduledItems.length > 0 && scheduledItems[scheduledItems.length - 1].link) {
-          const item = scheduledItems[scheduledItems.length - 1];
-          console.log(`🎯 Encontrada última oferta programada en queue.json (ID: ${item.id}): ${item.producto}`);
-          return { link: item.link, queueItem: item };
-        }
-
-        // 3. Tomar el último del array
-        const lastItem = items[items.length - 1];
-        if (lastItem && lastItem.link) {
-          console.log(`🎯 Usando última oferta en queue.json (ID: ${lastItem.id}): ${lastItem.producto}`);
-          return { link: lastItem.link, queueItem: lastItem };
-        }
-      }
+      queueItems = Array.isArray(queue) ? queue : [];
     } catch (e) {
       console.error("⚠️ Error leyendo queue.json:", e.message);
     }
   }
 
-  // B. Fallback a issues cerrados
+  // 1. Si hay un item programado específicamente para HOY, lo usamos directamente sin deduplicar
+  const todayItem = queueItems.find(item => item.scheduled_date && item.scheduled_date.startsWith(todayStr));
+  if (todayItem && todayItem.link) {
+    console.log(`🎯 Encontrada oferta programada específicamente para hoy en queue.json (ID: ${todayItem.id}): ${todayItem.producto}`);
+    return { link: todayItem.link, queueItem: todayItem };
+  }
+
+  // 2. Si no hay item para hoy, recopilamos candidatos para elegir dinámicamente un candidato fresco (que no tenga video reciente)
+  console.log("🔄 Buscando candidatos frescos de queue.json y closed issues...");
+  const candidatesMap = new Map();
+
+  // Candidatos de queue.json
+  queueItems.forEach(item => {
+    if (item.link) {
+      candidatesMap.set(item.link, {
+        link: item.link,
+        producto: item.producto,
+        precio: item.precio,
+        descuento: item.descuento,
+        copy: item.copy
+      });
+    }
+  });
+
+  // Candidatos de closed issues (vía gh CLI)
   try {
-    const closedIssuesJson = execSync('gh issue list --state closed --json number,title,body --limit 5').toString();
+    const closedIssuesJson = execSync('gh issue list --state closed --json number,title,body --limit 30').toString();
     const closedIssues = JSON.parse(closedIssuesJson);
     const urlRegex = /(https?:\/\/[^\s]+)/;
 
@@ -79,18 +83,82 @@ function getRecentProductData() {
       const match = (issue.body || '').match(urlRegex) || issue.title.match(urlRegex);
       if (match) {
         const url = match[1];
-        console.log(`🎯 Link encontrado en Issue cerrado #${issue.number}: ${url}`);
-        return { link: url, queueItem: { producto: issue.title, precio: null, descuento: null } };
+        if (!candidatesMap.has(url)) {
+          candidatesMap.set(url, {
+            link: url,
+            producto: issue.title,
+            precio: null,
+            descuento: null,
+            copy: issue.body || ''
+          });
+        }
       }
     }
   } catch (e) {
-    console.warn("⚠️ No se pudieron obtener closed issues vía GH CLI.");
+    console.warn("⚠️ No se pudieron obtener candidatos de closed issues vía GH CLI.");
   }
 
-  // C. Fallback por defecto
-  const defaultLink = "https://articulo.mercadolibre.com.mx/MLM-1402242137-audifonos-diadema-bluetooth-inalambricos-auriculares-hifi-_JM";
-  console.log(`⚠️ No se encontró oferta activa. Usando fallback por defecto: ${defaultLink}`);
-  return { link: defaultLink, queueItem: { producto: "Audífonos Inalámbricos Bluetooth", precio: "$299", descuento: "50% OFF" } };
+  const allCandidates = Array.from(candidatesMap.values());
+  console.log(`📋 Total de candidatos únicos encontrados: ${allCandidates.length}`);
+
+  if (allCandidates.length === 0) {
+    // Fallback por defecto si no hay nada
+    const defaultLink = "https://articulo.mercadolibre.com.mx/MLM-1402242137-audifonos-diadema-bluetooth-inalambricos-auriculares-hifi-_JM";
+    console.log(`⚠️ No se encontraron candidatos. Usando fallback por defecto: ${defaultLink}`);
+    return { link: defaultLink, queueItem: { producto: "Audífonos Inalámbricos Bluetooth", precio: "$299", descuento: "50% OFF" } };
+  }
+
+  // C. Obtener descripciones de los videos publicados recientemente en Facebook para evitar duplicados
+  let recentVideoTexts = [];
+  if (PAGE_ID && ACCESS_TOKEN) {
+    try {
+      console.log("📊 Consultando videos publicados recientemente en Facebook para evitar duplicados...");
+      const fbUrl = `https://graph.facebook.com/v19.0/${PAGE_ID}/videos?fields=description,title&limit=15&access_token=${ACCESS_TOKEN}`;
+      const res = await fetch(fbUrl);
+      if (res.ok) {
+        const resJson = await res.json();
+        if (resJson && resJson.data) {
+          recentVideoTexts = resJson.data.map(v => `${v.title || ''} ${v.description || ''}`);
+          console.log(`✅ Obtenidas descripciones de los últimos ${recentVideoTexts.length} videos de Facebook.`);
+        }
+      } else {
+        console.warn(`⚠️ Respuesta de API de Meta no exitosa: ${res.status} ${res.statusText}`);
+      }
+    } catch (fbErr) {
+      console.warn("⚠️ Error conectando con API de Meta para verificar videos duplicados:", fbErr.message);
+    }
+  }
+
+  // D. Filtrar candidatos que ya tienen video reciente
+  const freshCandidates = allCandidates.filter(c => {
+    // Comprobar si el link o el título corto del producto aparecen en las descripciones de los videos recientes
+    const isUsed = recentVideoTexts.some(text => {
+      if (text.includes(c.link)) return true;
+      const cleanTitle = c.producto.replace(/\(repetición\)/gi, '').trim().toLowerCase();
+      // Si el título es muy largo, tomamos las primeras 3 palabras clave significativas
+      const keywords = cleanTitle.split(/\s+/).filter(w => w.length > 3).slice(0, 3);
+      if (keywords.length > 0) {
+        const matchesAllKeywords = keywords.every(kw => text.toLowerCase().includes(kw));
+        if (matchesAllKeywords) return true;
+      }
+      return false;
+    });
+    return !isUsed;
+  });
+
+  console.log(`✨ Candidatos frescos (sin video reciente): ${freshCandidates.length}`);
+
+  if (freshCandidates.length > 0) {
+    // Tomar el candidato fresco más reciente
+    const selected = freshCandidates[0];
+    console.log(`🎯 Seleccionada oferta fresca para video: ${selected.producto} (${selected.link})`);
+    return { link: selected.link, queueItem: selected };
+  } else {
+    // Si todos ya se usaron recientemente, elegimos el primero/más nuevo del total para no detener la publicación diaria
+    const selected = allCandidates[0];
+    console.log(`⚠️ Todos los candidatos se usaron recientemente. Seleccionando el más reciente por defecto: ${selected.producto}`);
+    return { link: selected.link, queueItem: selected };
+  }
 }
 
 // ─────────────────────────────────────────
@@ -288,7 +356,7 @@ async function main() {
     console.log("=========================================");
 
     // 1. Obtener link y hacer scraping
-    const { link: productLink, queueItem } = getRecentProductData();
+    const { link: productLink, queueItem } = await getRecentProductData();
     console.log(`🔗 Oferta destino: ${productLink}`);
 
     const scrapeResult = await scrapeProduct(productLink);
