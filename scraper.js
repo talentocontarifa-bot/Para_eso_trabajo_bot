@@ -225,6 +225,32 @@ async function scrapeWithPlaywright(url) {
 }
 
 /**
+ * Invoca el helper de Scrapling en Python para obtener datos del producto.
+ */
+function scrapeWithScrapling(url) {
+    const { execSync } = require('child_process');
+    const path = require('path');
+    try {
+        console.log(`   [Scrapling] Ejecutando helper en Python para: ${url}`);
+        // Escapamos comillas dobles en la URL por seguridad
+        const escapedUrl = url.replace(/"/g, '\\"');
+        const helperPath = path.join(__dirname, 'scrapling_helper.py');
+        const output = execSync(`python "${helperPath}" --url "${escapedUrl}"`, { encoding: 'utf-8' });
+        const parsed = JSON.parse(output);
+        if (parsed.success) {
+            console.log(`   [Scrapling] Datos extraídos exitosamente.`);
+            return parsed;
+        } else {
+            console.warn(`   [Scrapling] Helper reportó fallo: ${parsed.error}`);
+            return { success: false, error: parsed.error };
+        }
+    } catch (e) {
+        console.error(`   [Scrapling] Error ejecutando python scrapling_helper.py: ${e.message}`);
+        return { success: false, error: e.message };
+    }
+}
+
+/**
  * Función principal expuesta para realizar el scraping del producto.
  */
 async function scrapeProduct(url) {
@@ -243,10 +269,20 @@ async function scrapeProduct(url) {
                 url: resolvedUrl
             };
         }
-        console.log(`   [API] Falló o no retornó datos. Usando fallback con Playwright...`);
+        console.log(`   [API] Falló o no retornó datos. Probando con Scrapling...`);
     }
     
-    // 2. Usar Playwright si no es Mercado Libre o si la API falló
+    // 2. Usar Scrapling (Sigiloso y Adaptativo)
+    const scraplingResult = scrapeWithScrapling(resolvedUrl);
+    if (scraplingResult.success && scraplingResult.title && scraplingResult.price) {
+        return {
+            ...scraplingResult,
+            url: resolvedUrl
+        };
+    }
+    console.log(`   [Scrapling] Datos incompletos o falló. Usando fallback alternativo de Playwright JS...`);
+    
+    // 3. Usar Playwright JS si Scrapling falló
     const playwrightResult = await scrapeWithPlaywright(resolvedUrl);
     if (playwrightResult.success) {
         return {
@@ -255,7 +291,7 @@ async function scrapeProduct(url) {
         };
     }
     
-    // 3. Retornar error si ambos fallan
+    // 4. Retornar error si ambos fallan
     return {
         title: '',
         price: null,
@@ -265,7 +301,7 @@ async function scrapeProduct(url) {
         imageUrl: null,
         success: false,
         url: resolvedUrl,
-        error: 'Ambos métodos de scraping (API y Playwright) fallaron'
+        error: 'Todos los métodos de scraping (API, Scrapling y Playwright) fallaron'
     };
 }
 
