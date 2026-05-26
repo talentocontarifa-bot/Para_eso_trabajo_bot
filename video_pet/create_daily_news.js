@@ -11,9 +11,12 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const ELEVENLABS_VOICE_ID = '4XUsiqPDK4UACIM2BILe'; // Voz profesional
 const FPS = 30;
 
-if ((!GEMINI_API_KEY && !GROQ_API_KEY) || !ELEVENLABS_API_KEY) {
-  console.error("❌ Faltan variables de entorno: (GEMINI_API_KEY o GROQ_API_KEY) y ELEVENLABS_API_KEY");
+if (!GEMINI_API_KEY && !GROQ_API_KEY) {
+  console.error("❌ Faltan variables de entorno: necesitas GEMINI_API_KEY o GROQ_API_KEY");
   process.exit(1);
+}
+if (!ELEVENLABS_API_KEY) {
+  console.warn("⚠️  ELEVENLABS_API_KEY no encontrado. Se usará edge-tts como fallback para la voz.");
 }
 
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
@@ -285,47 +288,75 @@ Responde ÚNICAMENTE con JSON válido:
 }
 
 // ─────────────────────────────────────────
-// 4. GENERAR VOZ EN OFF (ElevenLabs)
+// 4. GENERAR VOZ EN OFF (ElevenLabs → edge-tts fallback)
 // ─────────────────────────────────────────
 async function generateVoice(script) {
-  console.log(`\n🎙️ Generando voz con ElevenLabs (voz: ${ELEVENLABS_VOICE_ID})...`);
+  console.log(`\n🎙️ Generando voz en off...`);
   console.log(`   Guion: "${script}"`);
 
-  const response = await fetch(
-    `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
-    {
-      method: 'POST',
-      headers: {
-        'xi-api-key': ELEVENLABS_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: script,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.45,
-          similarity_boost: 0.82,
-          style: 0.35,
-          use_speaker_boost: true,
-        },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`ElevenLabs error: ${response.status} — ${err}`);
-  }
-
-  const audioBuffer = await response.arrayBuffer();
   const audioPath = path.join(__dirname, 'public', 'voice.mp3');
   fs.mkdirSync(path.dirname(audioPath), { recursive: true });
-  fs.writeFileSync(audioPath, Buffer.from(audioBuffer));
 
-  const durationSeconds = await getAudioDurationInSeconds(audioPath);
-  const totalFrames = Math.ceil(durationSeconds * FPS) + 30; // +1s de amortiguación
-  console.log(`✅ Audio guardado. Duración: ${durationSeconds.toFixed(2)}s → ${totalFrames} frames`);
-  return { audioPath, durationSeconds, totalFrames };
+  // ── Intento 1: ElevenLabs (calidad premium) ───────────────────────────────
+  if (ELEVENLABS_API_KEY) {
+    try {
+      console.log(`   🎤 Usando ElevenLabs (voz: ${ELEVENLABS_VOICE_ID})...`);
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
+        {
+          method: 'POST',
+          headers: {
+            'xi-api-key': ELEVENLABS_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: script,
+            model_id: 'eleven_multilingual_v2',
+            voice_settings: {
+              stability: 0.45,
+              similarity_boost: 0.82,
+              style: 0.35,
+              use_speaker_boost: true,
+            },
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const audioBuffer = await response.arrayBuffer();
+        fs.writeFileSync(audioPath, Buffer.from(audioBuffer));
+        const durationSeconds = await getAudioDurationInSeconds(audioPath);
+        const totalFrames = Math.ceil(durationSeconds * FPS) + 30;
+        console.log(`✅ [ElevenLabs] Audio generado. Duración: ${durationSeconds.toFixed(2)}s → ${totalFrames} frames`);
+        return { audioPath, durationSeconds, totalFrames };
+      } else {
+        const err = await response.text();
+        console.warn(`⚠️  ElevenLabs respondió ${response.status}: ${err}`);
+        console.warn("   Intentando con edge-tts como fallback...");
+      }
+    } catch (e) {
+      console.warn(`⚠️  Error con ElevenLabs: ${e.message}`);
+      console.warn("   Intentando con edge-tts como fallback...");
+    }
+  }
+
+  // ── Fallback: edge-tts (Microsoft Edge TTS, gratis, sin API key) ──────────
+  // Voz: es-MX-DaliaNeural — español mexicano, femenina, alta calidad
+  try {
+    console.log("   🔄 Usando edge-tts (es-MX-DaliaNeural)...");
+    // Escapar comillas dobles y saltos de línea para pasarlo por CLI de forma segura
+    const safeScript = script.replace(/"/g, "'").replace(/\n/g, ' ');
+    execSync(
+      `edge-tts --voice es-MX-DaliaNeural --text "${safeScript}" --write-media "${audioPath}"`,
+      { timeout: 60000 }
+    );
+    const durationSeconds = await getAudioDurationInSeconds(audioPath);
+    const totalFrames = Math.ceil(durationSeconds * FPS) + 30;
+    console.log(`✅ [edge-tts] Audio generado. Duración: ${durationSeconds.toFixed(2)}s → ${totalFrames} frames`);
+    return { audioPath, durationSeconds, totalFrames };
+  } catch (e) {
+    throw new Error(`❌ Todos los motores TTS fallaron. Último error (edge-tts): ${e.message}`);
+  }
 }
 
 // ─────────────────────────────────────────
