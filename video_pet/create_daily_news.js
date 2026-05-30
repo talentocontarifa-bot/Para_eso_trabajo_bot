@@ -290,9 +290,30 @@ Responde ÚNICAMENTE con JSON válido:
 // ─────────────────────────────────────────
 // 4. GENERAR VOZ EN OFF (ElevenLabs → edge-tts fallback)
 // ─────────────────────────────────────────
+function sanitizeTtsText(text) {
+  return text
+    // Reemplazar elipsis con un punto simple para evitar tropezones en ElevenLabs
+    .replace(/\.{3,}/g, '.')
+    .replace(/\.{2,}/g, '.')
+    // Reemplazar dos puntos y punto y coma con puntos para pausas más naturales
+    .replace(/[;:]/g, '.')
+    // Quitar comas repetidas
+    .replace(/,{2,}/g, ',')
+    // Eliminar caracteres especiales/emojis, dejando letras, números, espacios y puntuación básica
+    .replace(/[^\w\sáéíóúüñÁÉÍÓÚÜÑ.,¡!¿?]/g, ' ')
+    // Limpiar espacios alrededor de puntuación
+    .replace(/\s+([.,;:!?])/g, '$1')
+    // Garantizar un único espacio después de cada signo de puntuación
+    .replace(/([.,;:!?])\s*/g, '$1 ')
+    // Eliminar espacios múltiples
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function generateVoice(script) {
   console.log(`\n🎙️ Generando voz en off...`);
-  console.log(`   Guion: "${script}"`);
+  const fullScript = sanitizeTtsText(script);
+  console.log(`   Guion optimizado: "${fullScript}"`);
 
   const audioPath = path.join(__dirname, 'public', 'voice.mp3');
   fs.mkdirSync(path.dirname(audioPath), { recursive: true });
@@ -310,7 +331,7 @@ async function generateVoice(script) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            text: script,
+            text: fullScript,
             model_id: 'eleven_multilingual_v2',
             voice_settings: {
               stability: 0.65,
