@@ -8,7 +8,7 @@ const { scrapeProduct } = require('../scraper');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const ELEVENLABS_VOICE_ID = '4XUsiqPDK4UACIM2BILe'; // Voz profesional
+const ELEVENLABS_VOICE_ID = 'pVSoAhDpVO8HBRVURsj5'; // Voz profesional
 const FPS = 30;
 
 if (!GEMINI_API_KEY && !GROQ_API_KEY) {
@@ -313,9 +313,9 @@ async function generateVoice(script) {
             text: script,
             model_id: 'eleven_multilingual_v2',
             voice_settings: {
-              stability: 0.45,
-              similarity_boost: 0.82,
-              style: 0.35,
+              stability: 0.65,
+              similarity_boost: 0.85,
+              style: 0.0,
               use_speaker_boost: true,
             },
           }),
