@@ -191,6 +191,10 @@ async function generateDealMetadata(scrapeResult) {
   PRECIO ORIGINAL: ${scrapeResult.originalPrice || 'No especificado'}
   DESCUENTO: ${scrapeResult.discount || 'No especificado'}
   DESCRIPCIÓN: ${scrapeResult.description ? scrapeResult.description.substring(0, 500) : 'Sin descripción.'}
+  NOTAS Y CONTEXTO ADICIONAL:
+  """
+  ${scrapeResult.userNotes || 'Ninguno.'}
+  """
   `;
 
   const prompt = `Actúa como un experto creador de contenido de ofertas de "Para eso trabajo".
@@ -208,6 +212,7 @@ Estructura el video en 4 escenas:
 Reglas de Redacción del Guion ("script"):
 - Escribe el guion hablado completo que leerá la voz en off, con un tono enérgico, divertido y sumamente persuasivo.
 - El guion DEBE tener una extensión de exactamente entre 75 y 90 palabras para garantizar una duración de 18 a 22 segundos de video.
+- IMPORTANTE: Utiliza las "NOTAS Y CONTEXTO ADICIONAL" como guía, orientación y tono para estructurar el mensaje, pero NO uses el texto de las notas directamente como el título del producto si este ya tiene un nombre descriptivo real.
 - IMPORTANTE: No uses frases de una sola línea. Debes narrar detalladamente los beneficios y características del producto (por ejemplo, hablar de sus componentes, para qué sirve, el gran ahorro, y por qué vale la pena comprarlo hoy mismo).
 - Debe mencionar explícitamente el nombre del producto, el precio actual, el descuento, y hacer un llamado a la acción claro indicando que el link de compra oficial está en la biografía o descripción.
 - Debe terminar obligatoriamente con la frase ganadora: "¡Para eso trabajo!".
@@ -416,8 +421,8 @@ async function main() {
       console.warn(`⚠️ Scraping falló o fue incompleto: ${scrapeResult.error}. Se continuará con los datos de queue.json.`);
     }
 
-    // Limpiar el título de "(repetición)" y otras marcas innecesarias
-    const rawTitle = queueItem.producto || scrapeResult.title || 'Increíble Producto';
+    // Limpiar el título de "(repetición)" y otras marcas innecesarias, prefiriendo el título real raspado
+    const rawTitle = scrapeResult.title || queueItem.producto || 'Increíble Producto';
     const cleanTitle = rawTitle
       .replace(/\(repetición\)/gi, '')
       .replace(/ - [^-]+$/g, '') // Quitar nombres largos del final si los hay
@@ -426,20 +431,39 @@ async function main() {
     console.log(`✅ Producto final para el video: "${cleanTitle}"`);
 
     // 2. Descargar imagen
+    const destImagePath = path.join(__dirname, 'public', 'product.png');
+    let imageDownloaded = false;
     if (scrapeResult.imageUrl) {
-      const destImagePath = path.join(__dirname, 'public', 'product.png');
-      await downloadImage(scrapeResult.imageUrl, destImagePath);
+      try {
+        await downloadImage(scrapeResult.imageUrl, destImagePath);
+        imageDownloaded = true;
+      } catch (e) {
+        console.warn(`⚠️ Error descargando la imagen del scraping: ${e.message}`);
+      }
     } else {
       console.warn("⚠️ No se detectó imagen de producto en el scraping.");
     }
 
-    // 3. Combinar datos reales para pasárselos a la IA, priorizando los datos frescos del scraper
+    if (!imageDownloaded) {
+      if (!fs.existsSync(destImagePath)) {
+        console.log("    ⚠️ El archivo product.png no existe. Escribiendo pixel de fallback...");
+        const emptyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+        fs.mkdirSync(path.dirname(destImagePath), { recursive: true });
+        fs.writeFileSync(destImagePath, emptyPng);
+        console.log("    💾 Escrito pixel de fallback en product.png.");
+      } else {
+        console.log("    ℹ️ El archivo product.png anterior ya existe, se conservará.");
+      }
+    }
+
+    // 3. Combinar datos reales para pasárselos a la IA, incluyendo notas/título del issue como orientación
     const combinedData = {
       title: cleanTitle,
       price: scrapeResult.price || queueItem.precio,
       originalPrice: scrapeResult.originalPrice,
       discount: scrapeResult.discount || queueItem.descuento || 'OFERTA',
-      description: scrapeResult.description || queueItem.copy || ''
+      description: scrapeResult.description || '',
+      userNotes: `${queueItem.producto || ''}\n${queueItem.copy || ''}`.trim()
     };
 
     console.log(`   Precio Oferta: ${combinedData.price} | Descuento: ${combinedData.discount}`);
