@@ -109,9 +109,13 @@ async function callGeminiWithRetry(model, content, maxRetries = 5) {
 // Jina extraction and url resolving functions removed. Replaced by scrapeProduct.
 
 async function generateCopy(issue, productUrl, productMarkdown) {
+    const isRecycledHint = issue.isRecycled 
+        ? "\nNOTA DE ÁNGULO: Este es un producto con descuento que sigue disponible. Usa un gancho fresco y directo (ej: '¡Sigue en oferta!', 'Por si te lo perdiste', 'Sigue la rebaja').\n"
+        : "";
+
     const prompt = `Eres un copywriter experto en marketing de afiliados con estilo directo y persuasivo.
 Crea un post corto para Facebook promocionando el siguiente producto de Mercado Libre.
-
+${isRecycledHint}
 Aquí tienes la información real del producto extraída de la página web (Markdown):
 ${productMarkdown ? productMarkdown : "No se pudo extraer información directa del producto."}
 
@@ -167,8 +171,8 @@ Solo devuelve el texto final del post (asegúrate de que el link esté ahí), si
     }
 
     // 2. Respaldo a Gemini
-    console.log(`🧠 Generando copy con Gemini...`);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    console.log(`🧠 Generando copy con Gemini (gemini-1.5-flash)...`);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await callGeminiWithRetry(model, prompt);
     return result.response.text();
 }
@@ -183,37 +187,45 @@ async function main() {
 
     // 1. Obtener issues de GitHub
     console.log("📥 Consultando Issues abiertos...");
-    let issuesJson;
+    let openIssues = [];
     try {
-        issuesJson = execSync('gh issue list --state open --json number,title,body --limit 4').toString();
+        const issuesJson = execSync('gh issue list --state open --json number,title,body --limit 20').toString();
+        openIssues = JSON.parse(issuesJson);
     } catch (e) {
         console.error("❌ Error ejecutando 'gh issue list'. ¿Tienes el GH_TOKEN configurado?");
         console.error(e.message);
         process.exit(1);
     }
 
-    let issues = JSON.parse(issuesJson);
-    if (issues.length === 0) {
-        console.log("⚠️ No hay issues abiertos. Buscando publicaciones pasadas para reciclar...");
+    // Tomamos hasta 4 issues abiertos para los 4 horarios del día (10:00, 14:00, 18:00, 21:00)
+    let issues = openIssues.slice(0, 4);
+    console.log(`📦 Issues abiertos disponibles: ${openIssues.length}. Se programarán hoy: ${issues.length}`);
+
+    // Si hay menos de 4 issues abiertos, completamos los slots diarios con publicaciones pasadas
+    if (issues.length < 4) {
+        const needed = 4 - issues.length;
+        console.log(`🔄 Faltan ${needed} para completar los 4 posts del día. Buscando en historial cerrado para reciclar...`);
         try {
-            // Obtenemos hasta 100 issues cerrados para elegir 4 al azar
             const closedIssuesJson = execSync('gh issue list --state closed --json number,title,body --limit 100').toString();
             let closedIssues = JSON.parse(closedIssuesJson);
             
-            if (closedIssues.length === 0) {
-                console.log("✅ Tampoco hay issues cerrados. Nada que hacer.");
-                return;
+            if (closedIssues.length > 0) {
+                const recycled = closedIssues
+                    .filter(i => (i.body || '').includes('http') || (i.title || '').includes('http'))
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, needed)
+                    .map(i => ({ ...i, isRecycled: true }));
+                issues = issues.concat(recycled);
+                console.log(`♻️ Se agregaron ${recycled.length} publicaciones del historial para el día de hoy.`);
             }
-            
-            // Elegir aleatoriamente hasta 4 y marcarlos como reciclados
-            issues = closedIssues.sort(() => 0.5 - Math.random()).slice(0, 4).map(i => ({...i, isRecycled: true}));
-            console.log(`♻️ Se reciclarán ${issues.length} publicaciones pasadas.`);
         } catch (e) {
             console.error("❌ Error buscando issues cerrados:", e.message);
-            return;
         }
-    } else {
-        console.log(`📦 Se encontraron ${issues.length} issues para procesar hoy.`);
+    }
+
+    if (issues.length === 0) {
+        console.log("✅ No hay publicaciones disponibles para programar.");
+        return;
     }
 
     const urlRegex = /(https?:\/\/[^\s]+)/;
@@ -237,6 +249,12 @@ async function main() {
             // A. Realizar scraping del producto con el nuevo scraper unificado
             const scrapeResult = await scrapeProduct(productUrl);
             
+            // Validar disponibilidad si es reciclado
+            if (scrapeResult.isAvailable === false && issue.isRecycled) {
+                console.warn(`⚠️ El producto del issue #${issue.number} ya no está disponible (pausado/agotado). Saltando para no publicar enlaces caídos.`);
+                continue;
+            }
+
             let imageUrl = scrapeResult.imageUrl;
             let mediaFbid = null;
             
@@ -294,6 +312,32 @@ async function main() {
             
             const postId = await schedulePost(copyText, mediaFbid, scheduledTime);
             console.log(`✅ Post programado con éxito: ${postId}`);
+
+            // Registrar en queue.json para mantener persistencia e historial
+            try {
+                const queuePath = './queue.json';
+                let queue = [];
+                if (fs.existsSync(queuePath)) {
+                    try { queue = JSON.parse(fs.readFileSync(queuePath, 'utf8')); } catch (e) {}
+                }
+                queue.push({
+                    id: Date.now(),
+                    producto: scrapeResult.title || issue.title,
+                    precio: scrapeResult.price,
+                    descuento: scrapeResult.discount,
+                    link: productUrl,
+                    scheduled_date: new Date(scheduledTime * 1000).toISOString(),
+                    status: 'scheduled',
+                    copy: copyText,
+                    fb_post_id: postId,
+                    is_recycled: !!issue.isRecycled,
+                    scheduled_at: new Date().toISOString()
+                });
+                if (queue.length > 100) queue = queue.slice(-100);
+                fs.writeFileSync(queuePath, JSON.stringify(queue, null, 2));
+            } catch (qErr) {
+                console.warn(`⚠️ Error guardando en queue.json: ${qErr.message}`);
+            }
 
             // E. Cerrar Issue (solo si es nuevo)
             if (!issue.isRecycled) {

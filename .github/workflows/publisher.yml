@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      contents: read
+      contents: write
 
     steps:
       - name: Check out repository
@@ -49,3 +49,10 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node master_affiliate.js
+
+      - name: Auto Keep-Alive Activity Commit
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add queue.json
+          git diff --staged --quiet || (git commit -m "chore(auto): update publication queue & keep-alive [skip ci]" && git push)

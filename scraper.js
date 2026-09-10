@@ -84,11 +84,22 @@ async function scrapeWithPlaywright(url) {
         });
         const page = await context.newPage();
         
-        // Wait for page to fully load
-        await page.goto(url, { waitUntil: 'load', timeout: 25000 });
+        // Optimización de velocidad: bloquear recursos pesados no requeridos
+        await page.route('**/*', (route) => {
+            const req = route.request();
+            const type = req.resourceType();
+            const u = req.url();
+            if (['font', 'media'].includes(type) || u.includes('google-analytics') || u.includes('melidata') || u.includes('facebook.net') || u.includes('snoopy-matt')) {
+                return route.abort();
+            }
+            return route.continue();
+        });
+
+        // Wait for page to load
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
         
-        // Wait for title element to settle, confirming navigation is complete
-        await page.waitForSelector('h1', { timeout: 8000 }).catch(() => null);
+        // Esperar h1 o tarjeta social
+        await page.waitForSelector('h1, .poly-card', { timeout: 8000 }).catch(() => null);
         
         // Extraer todo en un solo bloque evaluate para evitar esperas secuenciales de locators
         const extractedData = await page.evaluate(() => {
@@ -182,13 +193,22 @@ async function scrapeWithPlaywright(url) {
                 }
             }
             
+            const isPausedOrSoldOut = !!(
+                document.querySelector('.ui-pdp-buybox__sold-out') ||
+                document.querySelector('.ui-pdp-promotions-pill-label--disabled') ||
+                document.body.innerText.includes('Publicación pausada') ||
+                document.body.innerText.includes('Publicación finalizada') ||
+                document.body.innerText.includes('Este producto ya no está disponible')
+            );
+
             return {
                 title,
                 ogImage,
                 price,
                 originalPrice,
                 discount,
-                description
+                description,
+                isAvailable: !isPausedOrSoldOut
             };
         });
         
@@ -211,6 +231,7 @@ async function scrapeWithPlaywright(url) {
             discount: discount,
             description: extractedData.description,
             imageUrl: extractedData.ogImage,
+            isAvailable: extractedData.isAvailable,
             success: true,
             method: 'playwright'
         };
@@ -266,6 +287,7 @@ async function scrapeProduct(url) {
         if (apiResult.success) {
             return {
                 ...apiResult,
+                isAvailable: true,
                 url: resolvedUrl
             };
         }
@@ -277,6 +299,7 @@ async function scrapeProduct(url) {
     if (scraplingResult.success && scraplingResult.title && scraplingResult.price) {
         return {
             ...scraplingResult,
+            isAvailable: true,
             url: resolvedUrl
         };
     }
@@ -287,6 +310,7 @@ async function scrapeProduct(url) {
     if (playwrightResult.success) {
         return {
             ...playwrightResult,
+            isAvailable: playwrightResult.isAvailable !== false,
             url: resolvedUrl
         };
     }
@@ -299,6 +323,7 @@ async function scrapeProduct(url) {
         discount: null,
         description: '',
         imageUrl: null,
+        isAvailable: false,
         success: false,
         url: resolvedUrl,
         error: 'Todos los métodos de scraping (API, Scrapling y Playwright) fallaron'

@@ -76,6 +76,35 @@ async function getRecentProductData() {
     }
   });
 
+  // Candidatos de open issues (lo más nuevo y prioritario)
+  try {
+    const openIssuesJson = execSync('gh issue list --state open --json number,title,body --limit 20').toString();
+    const openIssues = JSON.parse(openIssuesJson);
+    const urlRegex = /(https?:\/\/[^\s]+)/;
+
+    for (const issue of openIssues) {
+      const match = (issue.body || '').match(urlRegex) || issue.title.match(urlRegex);
+      if (match) {
+        const url = match[1];
+        if (!candidatesMap.has(url)) {
+          candidatesMap.set(url, {
+            link: url,
+            producto: issue.title,
+            precio: null,
+            descuento: null,
+            copy: issue.body || '',
+            priority: true
+          });
+        }
+      }
+    }
+    if (openIssues.length > 0) {
+      console.log(`🔥 Se encontraron ${openIssues.length} issues abiertos para priorizar.`);
+    }
+  } catch (e) {
+    console.warn("⚠️ No se pudieron obtener candidatos de open issues vía GH CLI:", e.message);
+  }
+
   // Candidatos de closed issues (vía gh CLI)
   try {
     const closedIssuesJson = execSync('gh issue list --state closed --json number,title,body --limit 30').toString();
@@ -282,7 +311,7 @@ Responde ÚNICAMENTE con JSON válido:
 
   console.log("🧠 Usando Gemini para generar guion...");
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
+    model: "gemini-1.5-flash",
     generationConfig: { responseMimeType: "application/json" }
   });
 
