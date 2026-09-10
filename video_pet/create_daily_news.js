@@ -298,27 +298,43 @@ Responde ÚNICAMENTE con JSON válido:
         } catch (e) {
           attempts++;
           console.log(`⚠️ Intento ${attempts} con Groq (${modelName}) fallido: ${e.message}`);
+          if (e.message.includes("does not exist") || e.message.includes("do not have access")) {
+            console.log(`⏩ Modelo ${modelName} no disponible en la cuenta Groq, probando siguiente...`);
+            break;
+          }
           await new Promise(r => setTimeout(r, 2000));
         }
       }
     }
-    console.log("❌ Groq falló. Usando Gemini como fallback...");
+    console.log("❌ Groq no pudo completar la solicitud. Usando Gemini como respaldo...");
   }
 
   if (!genAI) {
     throw new Error("No hay API keys de Groq ni Gemini disponibles.");
   }
 
-  console.log("🧠 Usando Gemini para generar guion...");
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-    generationConfig: { responseMimeType: "application/json" }
-  });
+  console.log("🧠 Usando Gemini para generar guion y metadatos...");
+  const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash"];
+  let lastGeminiError = null;
 
-  const result = await model.generateContent(prompt);
-  const parsed = JSON.parse(result.response.text());
-  console.log("✅ Guion generado con Gemini");
-  return parsed;
+  for (const modelName of geminiModels) {
+    try {
+      console.log(`   Probando Gemini modelo: ${modelName}...`);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: { responseMimeType: "application/json" }
+      });
+      const result = await model.generateContent(prompt);
+      const parsed = JSON.parse(result.response.text());
+      console.log(`✅ Guion y metadatos generados exitosamente con Gemini (${modelName})`);
+      return parsed;
+    } catch (e) {
+      lastGeminiError = e;
+      console.warn(`⚠️ Error con modelo ${modelName}: ${e.message}`);
+    }
+  }
+
+  throw new Error(`Todos los modelos de Gemini fallaron. Último error: ${lastGeminiError?.message}`);
 }
 
 // ─────────────────────────────────────────

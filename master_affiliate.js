@@ -163,6 +163,10 @@ Solo devuelve el texto final del post (asegúrate de que el link esté ahí), si
                 } catch (e) {
                     attempts++;
                     console.log(`⚠️ Intento ${attempts} con Groq (${model}) fallido: ${e.message}`);
+                    if (e.message.includes("does not exist") || e.message.includes("do not have access")) {
+                        console.log(`⏩ Modelo ${model} no disponible en la cuenta Groq, probando siguiente...`);
+                        break;
+                    }
                     await new Promise(r => setTimeout(r, 2000));
                 }
             }
@@ -171,10 +175,23 @@ Solo devuelve el texto final del post (asegúrate de que el link esté ahí), si
     }
 
     // 2. Respaldo a Gemini
-    console.log(`🧠 Generando copy con Gemini (gemini-1.5-flash)...`);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const result = await callGeminiWithRetry(model, prompt);
-    return result.response.text();
+    const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash"];
+    let lastGeminiError = null;
+
+    for (const modelName of geminiModels) {
+        try {
+            console.log(`🧠 Generando copy con Gemini (${modelName})...`);
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const result = await callGeminiWithRetry(model, prompt);
+            console.log(`✅ Copy generado exitosamente con Gemini (${modelName})`);
+            return result.response.text();
+        } catch (e) {
+            lastGeminiError = e;
+            console.warn(`⚠️ Error con Gemini (${modelName}): ${e.message}`);
+        }
+    }
+
+    throw new Error(`Todos los modelos de Gemini fallaron. Último error: ${lastGeminiError?.message}`);
 }
 
 async function main() {
