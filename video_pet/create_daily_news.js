@@ -426,18 +426,23 @@ async function generateVoice(script) {
   }
 
   // ── Fallback: edge-tts (Microsoft Edge TTS, gratis, sin API key) ──────────
-  // Voz: es-MX-DaliaNeural — español mexicano, femenina, alta calidad
+  // Voz: es-MX-DaliaNeural — español mexicano, femenina, alta calidad comercial
   try {
-    console.log("   🔄 Usando edge-tts (es-MX-DaliaNeural)...");
-    // Escapar comillas dobles y saltos de línea para pasarlo por CLI de forma segura
+    console.log("   🔄 Usando edge-tts (es-MX-DaliaNeural con +10% rate)...");
     const safeScript = script.replace(/"/g, "'").replace(/\n/g, ' ');
+    const rawAudioPath = audioPath.replace(/\.mp3$/, '_raw.mp3');
     execSync(
-      `edge-tts --voice es-MX-DaliaNeural --text "${safeScript}" --write-media "${audioPath}"`,
+      `edge-tts --voice es-MX-DaliaNeural --rate="+10%" --text "${safeScript}" --write-media "${rawAudioPath}"`,
       { timeout: 60000 }
     );
+    // Cadena de Masterización Vocal Broadcast
+    const filterChain = "highpass=f=80,equalizer=f=140:width_type=h:width=60:g=3.5,equalizer=f=3600:width_type=h:width=1200:g=4.0,acompressor=threshold=-16dB:ratio=4:attack=10:release=120:makeup=2.5dB,loudnorm=I=-14:TP=-1.0:LRA=7";
+    execSync(`ffmpeg -y -i "${rawAudioPath}" -af "${filterChain}" -c:a libmp3lame -b:a 192k "${audioPath}"`, { stdio: 'pipe' });
+    try { fs.unlinkSync(rawAudioPath); } catch (e) {}
+
     const durationSeconds = await getAudioDurationInSeconds(audioPath);
     const totalFrames = Math.ceil(durationSeconds * FPS) + 30;
-    console.log(`✅ [edge-tts] Audio generado. Duración: ${durationSeconds.toFixed(2)}s → ${totalFrames} frames`);
+    console.log(`✅ [edge-tts masterizado] Audio generado. Duración: ${durationSeconds.toFixed(2)}s → ${totalFrames} frames`);
     return { audioPath, durationSeconds, totalFrames };
   } catch (e) {
     throw new Error(`❌ Todos los motores TTS fallaron. Último error (edge-tts): ${e.message}`);
@@ -565,12 +570,27 @@ async function main() {
     // 4. Generar voz hablada
     const voiceInfo = await generateVoice(metadata.script);
 
+    // Procesar música temática con Sidechain Ducking automático
+    const musicSrc = path.join(__dirname, 'public', 'music_electrodoodle.mp3');
+    const duckedMusic = path.join(__dirname, 'public', 'bg_music.mp3');
+    const targetDur = voiceInfo.durationSeconds ? Math.ceil(voiceInfo.durationSeconds + 1) : 30;
+    if (fs.existsSync(musicSrc)) {
+      try {
+        console.log('🎵 Aplicando Sidechain Audio Ducking a la música comercial...');
+        const duckingFilter = `[1:a]aformat=channel_layouts=stereo:sample_rates=48000[sc];[0:a]atrim=0:${targetDur},aformat=channel_layouts=stereo:sample_rates=48000[music];[music][sc]sidechaincompress=threshold=0.03:ratio=6:attack=40:release=350,volume=0.40[final_music]`;
+        execSync(`ffmpeg -y -i "${musicSrc}" -i "${voiceInfo.audioPath}" -filter_complex "${duckingFilter}" -map "[final_music]" -c:a libmp3lame -b:a 192k "${duckedMusic}"`, { stdio: 'pipe' });
+        console.log('✅ Música con Sidechain Ducking generada exitosamente.');
+      } catch (duckErr) {
+        console.warn('⚠️ Error en sidechain ducking, manteniendo música previa:', duckErr.message);
+      }
+    }
+
     // 5. Distribuir frames e integrar duraciones
     metadata.scenes = distributeFrames(metadata.scenes, voiceInfo.totalFrames);
     metadata.affiliate_link = productLink;
     
     // Guardar deal_data.json listo para Remotion y deal_data.js para HyperFrames
-    metadata.total_duration_sec = voiceInfo.durationSeconds ? Math.ceil(voiceInfo.durationSeconds + 1) : 12;
+    metadata.total_duration_sec = targetDur;
     const dealDataPath = path.join(__dirname, 'src', 'deal_data.json');
     fs.mkdirSync(path.dirname(dealDataPath), { recursive: true });
     fs.writeFileSync(dealDataPath, JSON.stringify(metadata, null, 2));

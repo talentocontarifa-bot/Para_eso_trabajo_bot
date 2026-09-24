@@ -390,7 +390,7 @@
       id="root"
       data-composition-id="main"
       data-start="0"
-      data-duration="32"
+      data-duration="30"
       data-width="1080"
       data-height="1920"
     >
@@ -418,7 +418,7 @@
           <div class="title-sub">
             <span>En Mercado Libre</span>
             <span>•</span>
-            <span style="color: #00A650;">Envío Rápido</span>
+            <span style="color: #00853D; font-weight: 700;">Envío Rápido</span>
           </div>
         </div>
       </div>
@@ -485,15 +485,23 @@
         </div>
       </div>
 
-      <!-- AUDIO TRACKS -->
-      <audio id="bgm" src="./public/bg_music.mp3" class="clip" data-start="0" data-duration="32" data-volume="0.12"></audio>
-      <audio id="vo" src="./public/voice.mp3" class="clip" data-start="0" data-duration="30.89" data-volume="1.0"></audio>
+      <!-- AUDIO TRACKS (Master Ducked BGM + Mastered Broadcast Voice) -->
+      <audio id="bgm" src="./public/bg_music.mp3" class="clip" data-start="0" data-duration="29.2" data-volume="0.85"></audio>
+      <audio id="vo" src="./public/voice.mp3" class="clip" data-start="0" data-duration="29.2" data-volume="1.0"></audio>
+
+      <!-- MICRO-SFX TRACKS -->
+      <audio id="sfx-whoosh1" src="./public/sfx/whoosh.mp3" class="clip" data-start="0.05" data-duration="0.35" data-volume="0.40"></audio>
+      <audio id="sfx-whoosh2" src="./public/sfx/whoosh.mp3" class="clip" data-start="8.6" data-duration="0.35" data-volume="0.40"></audio>
+      <audio id="sfx-pop" src="./public/sfx/pop.mp3" class="clip" data-start="8.8" data-duration="0.1" data-volume="0.50"></audio>
+      <audio id="sfx-cash" src="./public/sfx/cash.mp3" class="clip" data-start="15.1" data-duration="0.8" data-volume="0.60"></audio>
+      <audio id="sfx-whoosh3" src="./public/sfx/whoosh.mp3" class="clip" data-start="23.3" data-duration="0.35" data-volume="0.40"></audio>
+      <audio id="sfx-ding" src="./public/sfx/ding.mp3" class="clip" data-start="24.2" data-duration="0.6" data-volume="0.45"></audio>
     </div>
 
     <script>
       // 1. Población dinámica de datos
       const data = window.DEAL_DATA || {};
-      const totalDur = data.total_duration_sec || 32;
+      const totalDur = data.total_duration_sec || 30;
       const scenes = data.scenes || [];
 
       // Actualizar atributos de duración en root y audio
@@ -502,13 +510,21 @@
       const bgmEl = document.getElementById('bgm');
       if (bgmEl) bgmEl.setAttribute('data-duration', String(totalDur));
       const voEl = document.getElementById('vo');
-      if (voEl) voEl.setAttribute('data-duration', String(Math.max(1, totalDur - 0.5)));
+      if (voEl) voEl.setAttribute('data-duration', String(Math.max(1, totalDur - 0.2)));
 
       // Inyectar textos
       const sc1 = scenes[0] || { start: 0, end: 9.0 };
-      const sc2 = scenes[1] || { start: 9.2, end: 16.0 };
-      const sc3 = scenes[2] || { start: 16.2, end: 24.4 };
-      const sc4 = scenes[3] || { start: 24.6, end: 31.5 };
+      const sc2 = scenes[1] || { start: 8.7, end: 15.0 };
+      const sc3 = scenes[2] || { start: 15.1, end: 23.2 };
+      const sc4 = scenes[3] || { start: 23.4, end: 30.0 };
+
+      // Sincronizar SFX dinámicamente con las marcas de tiempo de las escenas
+      const w1 = document.getElementById('sfx-whoosh1'); if (w1) w1.setAttribute('data-start', String(sc1.start || 0.05));
+      const w2 = document.getElementById('sfx-whoosh2'); if (w2) w2.setAttribute('data-start', String(sc2.start));
+      const pop = document.getElementById('sfx-pop'); if (pop) pop.setAttribute('data-start', String(sc2.start + 0.15));
+      const cash = document.getElementById('sfx-cash'); if (cash) cash.setAttribute('data-start', String(sc3.start));
+      const w3 = document.getElementById('sfx-whoosh3'); if (w3) w3.setAttribute('data-start', String(sc4.start));
+      const ding = document.getElementById('sfx-ding'); if (ding) ding.setAttribute('data-start', String(sc4.start + 0.5));
 
       if (sc1.text1) document.getElementById('title-tag').innerText = `🔥 ${sc1.text1}`;
       if (sc1.text2 || data.product_title) {

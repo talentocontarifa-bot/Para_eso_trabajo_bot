@@ -9,8 +9,8 @@ window.DEAL_DATA = {
     "30 Horas de Batería y Carga Rápida",
     "Sonido Hi-Res con DSEE Extreme"
   ],
-  "total_duration_sec": 32,
-  "total_frames": 960,
+  "total_duration_sec": 30,
+  "total_frames": 900,
   "scenes": [
     {
       "id": "scene_1",
@@ -20,8 +20,8 @@ window.DEAL_DATA = {
       "voice_text": "¡Atención compradores! Encontramos un ofertón irresistible en Mercado Libre para los audífonos Sony WH-1000XM5.",
       "subtitle": "¡Super oferta en Mercado Libre! Sony WH-1000XM5.",
       "start": 0.0,
-      "audio_duration": 9.024,
-      "end": 9.024
+      "audio_duration": 8.496,
+      "end": 8.496
     },
     {
       "id": "scene_2",
@@ -34,9 +34,9 @@ window.DEAL_DATA = {
       ],
       "voice_text": "Cuentan con la mejor cancelación de ruido de la industria, treinta horas continuas de batería y envío rápido FULL.",
       "subtitle": "Cancelación de ruido líder, 30h de batería y envío FULL.",
-      "start": 9.224,
-      "audio_duration": 6.84,
-      "end": 16.064
+      "start": 8.676,
+      "audio_duration": 6.288,
+      "end": 14.964
     },
     {
       "id": "scene_3",
@@ -46,9 +46,9 @@ window.DEAL_DATA = {
       "offer_price": "5,399.00",
       "voice_text": "Bajan de ocho mil novecientos noventa y nueve a solo cinco mil trescientos noventa y nueve pesos. ¡Un cuarenta por ciento de descuento!",
       "subtitle": "De $8,999 a solo $5,399 pesos. ¡40% de descuento!",
-      "start": 16.264,
-      "audio_duration": 8.184,
-      "end": 24.448
+      "start": 15.144,
+      "audio_duration": 8.04,
+      "end": 23.184
     },
     {
       "id": "scene_4",
@@ -56,9 +56,9 @@ window.DEAL_DATA = {
       "headline": "¡LINK EN BIO!",
       "voice_text": "¡Para eso trabajo! Consigue los tuyos antes de que se agoten tocando el enlace directo en nuestro perfil.",
       "subtitle": "¡Para eso trabajo! Toca el enlace en nuestra bio.",
-      "start": 24.648,
-      "audio_duration": 6.84,
-      "end": 31.488
+      "start": 23.364,
+      "audio_duration": 6.384,
+      "end": 29.748
     }
   ]
 };
