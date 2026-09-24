@@ -175,7 +175,7 @@ Solo devuelve el texto final del post (asegúrate de que el link esté ahí), si
     }
 
     // 2. Respaldo a Gemini
-    const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash"];
+    const geminiModels = ["gemini-2.5-flash", "gemini-2.5-pro"];
     let lastGeminiError = null;
 
     for (const modelName of geminiModels) {

@@ -1,8 +1,10 @@
 require('dotenv').config();
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const PAGE_ID = process.env.PAGE_ID || process.env.META_PAGE_ID;
 const ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN || process.env.META_PAGE_ACCESS_TOKEN;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8817838735:AAEg6mTjqW7h_xVd-HHHLjpdEc0ng1OKoZA';
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '8552499385';
 
@@ -80,12 +82,8 @@ async function getPageMetrics() {
   };
 }
 
-async function analyzeWithGroq(data) {
-  if (!GROQ_API_KEY) {
-    throw new Error('Missing GROQ_API_KEY environment variable.');
-  }
-
-  console.log('🧠 [4/5] Enviando datos a Groq (Llama 3.3 70B) para análisis...');
+async function analyzeWithAI(data) {
+  console.log('🧠 [4/5] Analizando datos con IA...');
   
   const prompt = `Actúa como un experto Analista de Growth Marketing y Estratega de Redes Sociales para la página de Facebook "${data.pageName}".
 Analiza los siguientes datos de rendimiento de la última semana (posts, videos, comentarios y reacciones).
@@ -126,56 +124,102 @@ Genera un reporte conciso y accionable formateado en Markdown para Telegram. El 
 
 Por favor, sé directo, estratégico y enfocado al crecimiento. No inventes datos. Usa emojis para facilitar la lectura rápida en móvil.`;
 
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${GROQ_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
+  // 1. Intentar con Groq si está disponible
+  if (GROQ_API_KEY) {
+    try {
+      console.log('   Intentando análisis con Groq...');
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
 
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`Groq API error: ${response.status} — ${errText}`);
+      if (response.ok) {
+        const resJson = await response.json();
+        if (resJson.choices?.[0]?.message?.content) {
+          console.log('✅ Análisis generado exitosamente con Groq');
+          return resJson.choices[0].message.content;
+        }
+      } else {
+        const errText = await response.text();
+        console.warn(`⚠️ Groq falló (${response.status}): ${errText}. Pasando a Gemini...`);
+      }
+    } catch (err) {
+      console.warn('⚠️ Error conectando con Groq:', err.message);
+    }
   }
 
-  const resJson = await response.json();
-  return resJson.choices[0].message.content;
+  // 2. Respaldo principal con Google Gemini
+  if (GEMINI_API_KEY) {
+    console.log('🧠 [4/5] Generando reporte con Google Gemini (gemini-2.5-flash)...');
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    let attempts = 0;
+    const maxRetries = 4;
+    while (attempts < maxRetries) {
+      try {
+        const result = await model.generateContent(prompt);
+        console.log('✅ Análisis generado exitosamente con Gemini (gemini-2.5-flash)');
+        return result.response.text();
+      } catch (err) {
+        attempts++;
+        console.warn(`⚠️ Intento ${attempts} fallido con Gemini: ${err.message}`);
+        if (attempts >= maxRetries) {
+          throw err;
+        }
+        const waitTime = attempts * 6000 + 4000;
+        console.log(`Esperando ${waitTime / 1000}s antes de reintentar con Gemini...`);
+        await new Promise(r => setTimeout(r, waitTime));
+      }
+    }
+  }
+
+  throw new Error('No hay GROQ_API_KEY ni GEMINI_API_KEY funcional disponible para el análisis.');
 }
 
 async function sendTelegramMessage(text) {
-  console.log('📤 [5/5] Enviando reporte a Telegram...');
-  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      chat_id: CHAT_ID,
-      text: text,
-      parse_mode: 'Markdown'
-    })
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    console.error('❌ Error enviando mensaje a Telegram:', errText);
+  if (!TELEGRAM_TOKEN || !CHAT_ID) {
+    console.log('ℹ️ Omitiendo Telegram: No se configuró TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID.');
     return null;
   }
-  
-  return await response.json();
+  console.log('📤 [5/5] Enviando reporte a Telegram...');
+  try {
+    const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: text,
+        parse_mode: 'Markdown'
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.warn('⚠️ No se pudo enviar mensaje a Telegram:', errText);
+      return null;
+    }
+    return await response.json();
+  } catch (err) {
+    console.warn('⚠️ Excepción al enviar mensaje a Telegram:', err.message);
+    return null;
+  }
 }
 
 async function main() {
   try {
     const data = await getPageMetrics();
-    const analysisReport = await analyzeWithGroq(data);
+    const analysisReport = await analyzeWithAI(data);
     await sendTelegramMessage(analysisReport);
     console.log('✅ ¡Proceso de análisis semanal completado con éxito!');
   } catch (error) {

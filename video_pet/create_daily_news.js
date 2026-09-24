@@ -314,23 +314,37 @@ Responde ÚNICAMENTE con JSON válido:
   }
 
   console.log("🧠 Usando Gemini para generar guion y metadatos...");
-  const geminiModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash"];
+  const geminiModels = ["gemini-2.5-flash", "gemini-2.5-pro"];
   let lastGeminiError = null;
 
   for (const modelName of geminiModels) {
-    try {
-      console.log(`   Probando Gemini modelo: ${modelName}...`);
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: { responseMimeType: "application/json" }
-      });
-      const result = await model.generateContent(prompt);
-      const parsed = JSON.parse(result.response.text());
-      console.log(`✅ Guion y metadatos generados exitosamente con Gemini (${modelName})`);
-      return parsed;
-    } catch (e) {
-      lastGeminiError = e;
-      console.warn(`⚠️ Error con modelo ${modelName}: ${e.message}`);
+    let attempts = 0;
+    const maxRetries = 4;
+    while (attempts < maxRetries) {
+      try {
+        console.log(`   Probando Gemini modelo: ${modelName} (intento ${attempts + 1}/${maxRetries})...`);
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: { responseMimeType: "application/json" }
+        });
+        const result = await model.generateContent(prompt);
+        const parsed = JSON.parse(result.response.text());
+        console.log(`✅ Guion y metadatos generados exitosamente con Gemini (${modelName})`);
+        return parsed;
+      } catch (e) {
+        attempts++;
+        lastGeminiError = e;
+        console.warn(`⚠️ Intento ${attempts} con ${modelName} fallido: ${e.message}`);
+        if (e.message.includes("404") || e.message.includes("not found")) {
+          break;
+        }
+        if (attempts >= maxRetries) {
+          break;
+        }
+        const waitTime = e.message.includes("429") || attempts > 2 ? 25000 : (attempts * 5000 + 5000);
+        console.log(`   Esperando ${waitTime / 1000}s antes de reintentar...`);
+        await new Promise(r => setTimeout(r, waitTime));
+      }
     }
   }
 
