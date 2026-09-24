@@ -231,36 +231,47 @@ async function generateDealMetadata(data) {
   """
   `;
 
-  const prompt = `Actúa como el mejor director comercial y locutor de ofertas de "Para eso trabajo".
-Tu misión: crear un video publicitario de alto impacto (vertical 9:16) para TikTok/Instagram Reels sobre esta oferta real:
+  const prompt = `Actúa como el mejor director creativo, copywriter y creador de contenido de "Para eso trabajo".
+Tu filosofía y lema de marca es: "¡Date el gusto, para eso trabajas!"
+La gente se esfuerza duro toda la semana y se merece consentirse con ofertones reales.
+Tu misión: crear un video publicitario irresistible, magnético y antojador (vertical 9:16) para TikTok/Instagram Reels sobre esta oferta real:
 ${productInfo}
+
+REGLAS DE ORO DE COPYWRITING (HAY QUE ANTOJARLO):
+- Tono: Cómplice, entusiasta, antojador, cercano y conversacional (español latino/mexicano natural, con chispa y deseo).
+- PROHIBIDAS las frases corporativas o aburridas de catálogo como "Excelente calidad", "Envío directo", "Gran oportunidad", "Atención compradores".
+- Enfócate en las SENSACIONES, el placer de estrenar, el confort, el estatus y el gusto de tenerlo:
+  * Si es perfume/belleza: antoja el aroma ("aroma magnético", "te van a llover cumplidos", "elegancia pura todo el día").
+  * Si es audio/tecnología: antoja la experiencia ("graves profundos", "batería para todo el fin", "diseño comodísimo").
+  * Si es ropa/calzado/cuidado: antoja el estilo y el confort ("comodidad nivel nube", "porte impecable", "roba miradas").
+  * Si es hogar/herramientas: antoja la practicidad y descanso ("te resuelve la vida", "descanso de hotel 5 estrellas").
 
 Debes estructurar el video en EXACTAMENTE 4 escenas sincronizadas.
 Para cada escena debes proveer OBLIGATORIAMENTE:
-- 'voice_text': Frase hablada que leerá la locutora en esa escena específica. Tono dinámico, vendedor y natural.
+- 'voice_text': Frase hablada que leerá la locutora en esa escena específica (10-15 palabras).
 - 'subtitle': Subtítulo corto y legible para la barra inferior (máximo 10 palabras).
 
 Las 4 escenas son:
-1. "title": Apertura anunciando la oferta en Mercado Libre.
-   - 'text1': Gancho como "OFERTAZO", "LIQUIDACIÓN", "OFERTA TOP" (máx 12 letras).
-   - 'text2': Nombre corto o marca del producto (máx 16 letras).
-   - 'voice_text': Frase de apertura anunciando la oferta en Mercado Libre (10-14 palabras).
-   - 'subtitle': Subtítulo corto de apertura (ej: "¡Gran oferta en Mercado Libre! ${cleanTitle.substring(0, 20)}.").
-2. "product": Beneficios y características principales.
+1. "title": Apertura con gancho que antoja y despierta curiosidad.
+   - 'text1': Gancho como "¡DATE EL GUSTO!", "ANTOJO TOTAL", "JOYITA TOP", "GUSTITO MERECIDO" (máx 16 letras).
+   - 'text2': Nombre corto o marca deseable del producto (máx 18 letras).
+   - 'voice_text': Gancho inicial que antoja y hace que la persona quiera consentirse (ej: "¿A poco no te mereces un buen gustito hoy? Checa la joya que acaba de caer en ofertón en Mercado Libre.").
+   - 'subtitle': Subtítulo de apertura irresistible (ej: "¡Date el gusto que te mereces! Ofertón imperdible.").
+2. "product": Beneficios sensoriales y antojadores.
    - 'product_title': "${cleanTitle}",
-   - 'key_points': Array de exactamente 3 beneficios cortos (máx 5 palabras cada uno).
-   - 'voice_text': Frase destacando los puntos fuertes y beneficios del producto (12-16 palabras).
-   - 'subtitle': Subtítulo destacando características principales.
-3. "price": Visual del precio y descuento.
+   - 'key_points': Exactamente 3 beneficios antojadores con emoji inicial (ej: "✨ Aroma fresco y magnético", "👑 Cumplidos garantizados", "🚀 Llega mañana con FULL").
+   - 'voice_text': Frase antojando el producto, describiendo la sensación o experiencia placentera de usarlo (12-16 palabras).
+   - 'subtitle': Subtítulo destacando el beneficio más antojable.
+3. "price": Visual del precio y descuento como justificación perfecta del gusto.
    - 'discount_percentage': ${cleanDiscount},
    - 'original_price': "${cleanOriginalPrice || ''}",
    - 'offer_price': "${cleanPrice}",
-   - 'voice_text': Frase mencionando EXACTAMENTE los precios y el descuento: "Llévatelo por solo ${cleanPrice} pesos con un ${cleanDiscount} por ciento de descuento sobre su precio de ${cleanOriginalPrice || cleanPrice} pesos." (12-16 palabras).
+   - 'voice_text': Frase mencionando EXACTAMENTE los precios y el descuento, justificando el capricho (ej: "Baja de ${cleanOriginalPrice || cleanPrice} a solo ${cleanPrice} pesos con un ${cleanDiscount} por ciento de descuento. ¡Por este precio es un regalo de ti para ti!").
    - 'subtitle': "De $${cleanOriginalPrice || ''} a solo $${cleanPrice} pesos. ¡${cleanDiscount}% de descuento!"
-4. "cta": Cierre con llamado a la acción.
-   - 'headline': "¡LINK EN BIO!",
-   - 'voice_text': Frase invitando a comprar en el enlace del perfil antes de que se termine, terminando OBLIGATORIAMENTE con la frase: "¡Para eso trabajo!" (12-16 palabras).
-   - 'subtitle': "¡Para eso trabajo! Toca el enlace en nuestra bio."
+4. "cta": Cierre con llamado a la acción y el lema de marca.
+   - 'headline': "¡PARA ESO TRABAJAS!",
+   - 'voice_text': Frase animando a comprarlo en el link de la bio antes de que se termine, terminando OBLIGATORIAMENTE con la frase: "¡Para eso trabajo!" (12-16 palabras).
+   - 'subtitle': "¡Para eso trabajo! Consiéntete en el link de la bio."
 
 Reglas:
 - "theme_color": elige un color neón vibrante (#00FF66, #FF0055, #00E5FF, #FFE600).
@@ -274,12 +285,12 @@ Responde ÚNICAMENTE con JSON válido:
   "discount_percentage": ${cleanDiscount},
   "original_price": "${cleanOriginalPrice || ''}",
   "offer_price": "${cleanPrice}",
-  "key_points": ["Aroma fresco y duradero", "Presentación 100 ml", "Envío FULL directo"],
+  "key_points": ["✨ Aroma magnético y fresco", "👑 Cumplidos garantizados", "🚀 Llega mañana con FULL"],
   "scenes": [
-    { "type": "title", "text1": "OFERTAZO", "text2": "${cleanTitle.substring(0, 16)}", "voice_text": "¡Atención compradores! Acaba de bajar de precio ${cleanTitle.substring(0, 25)} en Mercado Libre.", "subtitle": "¡Gran oferta en Mercado Libre! ${cleanTitle.substring(0, 25)}." },
-    { "type": "product", "product_title": "${cleanTitle}", "key_points": ["Aroma fresco y duradero", "Presentación 100 ml", "Envío FULL directo"], "voice_text": "Aprovecha esta increíble oportunidad con la mejor calidad y envío rápido directo a tu domicilio.", "subtitle": "Calidad garantizada y envío FULL directo a tu puerta." },
-    { "type": "price", "discount_percentage": ${cleanDiscount}, "original_price": "${cleanOriginalPrice || ''}", "offer_price": "${cleanPrice}", "voice_text": "Llévatelo hoy por solo ${cleanPrice} pesos, con un ${cleanDiscount} por ciento de descuento sobre su precio de ${cleanOriginalPrice || cleanPrice} pesos.", "subtitle": "De $${cleanOriginalPrice || ''} a solo $${cleanPrice} pesos. ¡${cleanDiscount}% de descuento!" },
-    { "type": "cta", "headline": "¡LINK EN BIO!", "voice_text": "Consigue el tuyo en el enlace de nuestra biografía antes de que se agote. ¡Para eso trabajo!", "subtitle": "¡Para eso trabajo! Toca el enlace en nuestra bio." }
+    { "type": "title", "text1": "¡DATE EL GUSTO!", "text2": "${cleanTitle.substring(0, 16)}", "voice_text": "¿A poco no te mereces un buen gustito hoy? Mira la joya que acaba de caer en oferta en Mercado Libre.", "subtitle": "¡Date el gusto que te mereces! Ofertón imperdible." },
+    { "type": "product", "product_title": "${cleanTitle}", "key_points": ["✨ Aroma magnético y fresco", "👑 Cumplidos garantizados", "🚀 Llega mañana con FULL"], "voice_text": "Huele a pura elegancia y sofisticación todo el día, de esos aromas que dejan huella donde camines.", "subtitle": "Aroma magnético, elegancia pura y presencia todo el día." },
+    { "type": "price", "discount_percentage": ${cleanDiscount}, "original_price": "${cleanOriginalPrice || ''}", "offer_price": "${cleanPrice}", "voice_text": "Baja de ${cleanOriginalPrice || cleanPrice} a solo ${cleanPrice} pesos con un ${cleanDiscount} por ciento de descuento. ¡Un regalazo de ti para ti!", "subtitle": "De $${cleanOriginalPrice || ''} a solo $${cleanPrice} pesos. ¡${cleanDiscount}% de descuento!" },
+    { "type": "cta", "headline": "¡PARA ESO TRABAJAS!", "voice_text": "No te quedes con las ganas y corre al enlace de nuestra biografía antes de que vuele. ¡Para eso trabajo!", "subtitle": "¡Para eso trabajo! Toca el enlace en nuestra bio." }
   ]
 }`;
 
@@ -352,42 +363,42 @@ Responde ÚNICAMENTE con JSON válido:
     }
   }
 
-  console.warn("⚠️ Los modelos de IA fallaron. Activando guion de contingencia basado en datos reales del producto.");
+  console.warn("⚠️ Los modelos de IA fallaron. Activando guion de contingencia antojador basado en datos reales del producto.");
   return {
     theme_color: "#00FF66",
     product_title: cleanTitle,
     discount_percentage: cleanDiscount,
     original_price: cleanOriginalPrice || '',
     offer_price: cleanPrice,
-    key_points: ["Excelente calidad", "Envío FULL directo", "Gran oportunidad"],
+    key_points: ["✨ Estilo y presencia de lujo", "👑 Calidad premium garantizada", "🚀 Llega volando con FULL"],
     scenes: [
       {
         type: "title",
-        text1: "OFERTAZO",
+        text1: "¡DATE EL GUSTO!",
         text2: cleanTitle.substring(0, 16).toUpperCase(),
-        voice_text: `¡Atención compradores! Acaba de bajar de precio ${cleanTitle.substring(0, 25)} en Mercado Libre.`,
-        subtitle: `¡Gran oferta en Mercado Libre! ${cleanTitle.substring(0, 25)}.`
+        voice_text: `¿A poco no te mereces un buen gustito hoy? Checa esta joyita que acaba de caer en ofertón en Mercado Libre.`,
+        subtitle: `¡Date el gusto que te mereces! Ofertón en Mercado Libre.`
       },
       {
         type: "product",
         product_title: cleanTitle,
-        key_points: ["Excelente calidad", "Envío FULL directo", "Compra protegida"],
-        voice_text: "Aprovecha esta increíble oportunidad con la mejor calidad y envío rápido directo a tu domicilio.",
-        subtitle: "Calidad garantizada y envío FULL directo a tu puerta."
+        key_points: ["✨ Estilo y presencia de lujo", "👑 Calidad premium garantizada", "🚀 Llega volando con FULL"],
+        voice_text: "Diseño impecable y una experiencia increíble para que te consientas y disfrutes cada día.",
+        subtitle: "Lujo accesible, elegancia y satisfacción garantizada."
       },
       {
         type: "price",
         discount_percentage: cleanDiscount,
         original_price: cleanOriginalPrice || '',
         offer_price: cleanPrice,
-        voice_text: `Llévatelo hoy por solo ${cleanPrice} pesos, con un ${cleanDiscount} por ciento de descuento sobre su precio habitual.`,
+        voice_text: `Baja a solo ${cleanPrice} pesos con un ${cleanDiscount} por ciento de descuento. ¡Un regalazo de ti para ti!`,
         subtitle: cleanOriginalPrice ? `De $${cleanOriginalPrice} a solo $${cleanPrice} pesos. ¡${cleanDiscount}% OFF!` : `A solo $${cleanPrice} pesos. ¡${cleanDiscount}% OFF!`
       },
       {
         type: "cta",
-        headline: "¡LINK EN BIO!",
-        voice_text: "Consigue el tuyo en el enlace de nuestra biografía antes de que se agote. ¡Para eso trabajo!",
-        subtitle: "¡Para eso trabajo! Toca el enlace en nuestra bio."
+        headline: "¡PARA ESO TRABAJAS!",
+        voice_text: "No te quedes con las ganas. Corre al link de nuestra biografía antes de que vuele. ¡Para eso trabajo!",
+        subtitle: "¡Para eso trabajo! Consiéntete en el link de la bio."
       }
     ]
   };
@@ -524,25 +535,56 @@ async function main() {
 
     console.log(`✅ Producto final para el video: "${cleanTitle}"`);
 
-    // 2. Descargar imagen
-    const destImagePath = path.join(__dirname, 'public', 'product.png');
-    let imageDownloaded = false;
-    if (scrapeResult.imageUrl) {
+    // 2. Descargar imágenes para galería visual de alto protagonismo
+    const destImagePath1 = path.join(__dirname, 'public', 'product.png');
+    const destImagePath2 = path.join(__dirname, 'public', 'product_2.png');
+    
+    const candidateImages = (scrapeResult.images && scrapeResult.images.length > 0)
+        ? scrapeResult.images
+        : (scrapeResult.imageUrl ? [scrapeResult.imageUrl] : []);
+
+    let image1Downloaded = false;
+    let image2Downloaded = false;
+
+    if (candidateImages[0]) {
       try {
-        await downloadImage(scrapeResult.imageUrl, destImagePath);
-        imageDownloaded = true;
+        await downloadImage(candidateImages[0], destImagePath1);
+        image1Downloaded = true;
       } catch (e) {
-        console.warn(`⚠️ Error descargando la imagen del scraping: ${e.message}`);
+        console.warn(`⚠️ Error descargando imagen 1 del scraping: ${e.message}`);
       }
     }
 
-    if (!imageDownloaded) {
-      if (!fs.existsSync(destImagePath)) {
-        console.log("    ⚠️ El archivo product.png no existe. Escribiendo pixel de fallback...");
-        const emptyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
-        fs.mkdirSync(path.dirname(destImagePath), { recursive: true });
-        fs.writeFileSync(destImagePath, emptyPng);
+    if (candidateImages[1]) {
+      try {
+        await downloadImage(candidateImages[1], destImagePath2);
+        image2Downloaded = true;
+        console.log(`✅ Segunda imagen del producto descargada exitosamente.`);
+      } catch (e) {
+        console.warn(`⚠️ Error descargando imagen 2 del scraping: ${e.message}`);
       }
+    }
+
+    // Si solo hay 1 imagen o falló la segunda, creamos una segunda toma macro/detalle cinematográfica con ffmpeg
+    if (image1Downloaded && !image2Downloaded) {
+      try {
+        console.log(`📸 Generando segunda toma macro/detalle cinematográfica con ffmpeg...`);
+        execSync(`ffmpeg -y -i "${destImagePath1}" -filter:v "crop=in_w*0.8:in_h*0.8:(in_w-in_w*0.8)/2:(in_h-in_h*0.8)/3,scale=800:800" "${destImagePath2}"`, { stdio: 'pipe' });
+        image2Downloaded = true;
+        console.log(`✅ Segunda toma macro/detalle generada exitosamente.`);
+      } catch (e) {
+        console.warn(`⚠️ No se pudo generar crop con ffmpeg, usando fallback: ${e.message}`);
+        fs.copyFileSync(destImagePath1, destImagePath2);
+        image2Downloaded = true;
+      }
+    }
+
+    if (!image1Downloaded && !fs.existsSync(destImagePath1)) {
+      console.log("    ⚠️ El archivo product.png no existe. Escribiendo pixel de fallback...");
+      const emptyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+      fs.mkdirSync(path.dirname(destImagePath1), { recursive: true });
+      fs.writeFileSync(destImagePath1, emptyPng);
+      if (!fs.existsSync(destImagePath2)) fs.writeFileSync(destImagePath2, emptyPng);
     }
 
     // 3. Preparar precios y porcentajes exactos

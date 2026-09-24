@@ -84,13 +84,25 @@ def extract_product(url):
             except Exception:
                 pass
 
+        # Extraer múltiples imágenes de alta resolución
+        images = []
+        gallery_imgs = page.css('.ui-pdp-gallery img::attr(src), .ui-pdp-gallery img::attr(data-src), .ui-pdp-gallery img::attr(data-zoom), .poly-card img::attr(src), .poly-card img::attr(data-src)').getall()
+        for g_img in gallery_imgs:
+            if g_img and 'pixel' not in g_img and not g_img.endswith('.gif') and not g_img.startswith('data:'):
+                high_res = g_img.replace('-I.jpg', '-O.jpg').replace('-V.jpg', '-O.jpg').replace('-I.webp', '-O.webp')
+                if high_res not in images:
+                    images.append(high_res)
+        if og_image and og_image not in images:
+            images.insert(0, og_image)
+
         result = {
             "title": title or '',
             "price": price,
             "originalPrice": original_price,
             "discount": discount,
             "description": description or '',
-            "imageUrl": og_image,
+            "imageUrl": images[0] if len(images) > 0 else og_image,
+            "images": images[:5],
             "success": True,
             "method": "scrapling"
         }
