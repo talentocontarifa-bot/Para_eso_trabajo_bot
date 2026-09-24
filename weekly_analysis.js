@@ -206,9 +206,25 @@ async function sendTelegramMessage(text) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.warn('⚠️ No se pudo enviar mensaje a Telegram:', errText);
+      console.warn('⚠️ Telegram rechazó Markdown, reintentando como texto plano...');
+      const plainResponse = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: text
+        })
+      });
+      if (plainResponse.ok) {
+        console.log('✅ Mensaje entregado a Telegram en texto plano');
+        return await plainResponse.json();
+      }
+      console.warn('⚠️ Falló también el envío en texto plano:', await plainResponse.text());
       return null;
     }
+    console.log('✅ Mensaje entregado a Telegram');
     return await response.json();
   } catch (err) {
     console.warn('⚠️ Excepción al enviar mensaje a Telegram:', err.message);
