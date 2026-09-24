@@ -1,37 +1,38 @@
 {
-  "theme_color": "#00FF66",
-  "product_title": "Audífonos Inalámbricos Bluetooth",
-  "discount_percentage": 65,
-  "original_price": "999.00",
-  "offer_price": "349.00",
+  "theme_color": "#FFE600",
+  "product_title": "Sony WH-1000XM5 Noise Cancelling",
+  "discount_percentage": 40,
+  "original_price": "8,999.00",
+  "offer_price": "5,399.00",
   "key_points": [
-    "Sonido Hi-Fi Estéreo",
-    "Batería hasta 30 Horas",
-    "Cancelación de Ruido"
+    "Cancelación de Ruido Líder",
+    "30 Horas de Batería y Carga Rápida",
+    "Sonido Hi-Res con DSEE Extreme"
   ],
-  "script": "¡Ofertón detectado! Audífonos Inalámbricos con 65% de descuento. Llévatelos hoy por solo 349 pesos en lugar de su precio regular de 999. Tienen sonido de alta fidelidad, batería de larga duración y cancelación de ruido activa. No dejes pasar esta oportunidad, haz clic en el enlace de la bio para ir a la oferta. ¡Para eso trabajo!",
+  "script": "¡Ofertón exclusivo! Audífonos premium Sony WH-1000XM5 con 40% de descuento. Llévatelos hoy por solo 5,399 pesos en lugar de 8,999. La mejor cancelación de ruido de la industria, hasta 30 horas de batería y envío rápido FULL en Mercado Libre. No te quedes sin los tuyos, enlace oficial disponible en la biografía. ¡Para eso trabajo!",
+  "total_duration_sec": 12,
   "scenes": [
     {
       "type": "title",
-      "text1": "OFERTAZO",
-      "text2": "AUDÍFONOS",
-      "durationInFrames": 120
+      "text1": "SUPER OFERTA",
+      "text2": "SONY WH-1000XM5",
+      "durationInFrames": 75
     },
     {
       "type": "image_text",
-      "text": "Audífonos Inalámbricos",
-      "durationInFrames": 180
+      "text": "Sony WH-1000XM5",
+      "durationInFrames": 115
     },
     {
       "type": "big_percentage",
-      "number": 65,
+      "number": 40,
       "text": "DE DESCUENTO",
-      "durationInFrames": 150
+      "durationInFrames": 90
     },
     {
       "type": "cta",
       "text": "¡LINK EN BIO!",
-      "durationInFrames": 150
+      "durationInFrames": 80
     }
   ]
 }
