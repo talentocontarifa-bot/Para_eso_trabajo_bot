@@ -569,12 +569,16 @@ async function main() {
     metadata.scenes = distributeFrames(metadata.scenes, voiceInfo.totalFrames);
     metadata.affiliate_link = productLink;
     
-    // Guardar deal_data.json listo para Remotion
+    // Guardar deal_data.json listo para Remotion y deal_data.js para HyperFrames
+    metadata.total_duration_sec = voiceInfo.durationSeconds ? Math.ceil(voiceInfo.durationSeconds + 1) : 12;
     const dealDataPath = path.join(__dirname, 'src', 'deal_data.json');
     fs.mkdirSync(path.dirname(dealDataPath), { recursive: true });
     fs.writeFileSync(dealDataPath, JSON.stringify(metadata, null, 2));
 
-    console.log(`\n🎉 METADATOS GENERADOS Y GUARDADOS EN ${dealDataPath}`);
+    const dealDataJsPath = path.join(__dirname, 'deal_data.js');
+    fs.writeFileSync(dealDataJsPath, `window.DEAL_DATA = ${JSON.stringify(metadata, null, 2)};\n`);
+
+    console.log(`\n🎉 METADATOS GENERADOS Y GUARDADOS EN ${dealDataPath} y ${dealDataJsPath}`);
     console.log("=========================================");
   } catch (error) {
     console.error("❌ Error en el proceso de creación:", error);

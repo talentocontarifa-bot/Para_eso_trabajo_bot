@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="es" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Para Eso Trabajo - Video</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="./deal_data.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #fff;
+      }
+      #root {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+      }
+
+      /* HEADER BADGES */
+      .header-ui {
+        position: absolute;
+        top: 100px;
+        left: 50px;
+        right: 50px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1000;
+      }
+      .live-badge {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #FFFFFF;
+        padding: 14px 28px;
+        border-radius: 40px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        border: 2px solid #EAEAEA;
+      }
+      .live-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: #00A650;
+        box-shadow: 0 0 12px #00A650;
+        animation: pulse-dot 1.2s infinite ease-in-out;
+      }
+      @keyframes pulse-dot {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(0.85); opacity: 0.5; }
+      }
+      .live-text {
+        font-size: 24px;
+        font-weight: 800;
+        color: #222;
+        letter-spacing: 1px;
+      }
+      .watermark-badge {
+        background: #3483FA;
+        border-radius: 20px;
+        padding: 14px 30px;
+        box-shadow: 0 10px 30px rgba(52, 131, 250, 0.4);
+        border: 2px solid rgba(255,255,255,0.4);
+        font-size: 26px;
+        font-weight: 900;
+        color: #FFF;
+        letter-spacing: 0.5px;
+      }
+
+      /* PROGRESS BAR */
+      .progress-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 16px;
+        background: rgba(0,0,0,0.25);
+        z-index: 1000;
+      }
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #3483FA, #00A650, #FFE600);
+      }
+
+      /* SCENE CONTAINERS */
+      .scene {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* SCENE 1: TITLE */
+      #scene-title {
+        background: radial-gradient(circle at 50% 35%, #FFF780 0%, #FFE600 65%, #ECCF00 100%);
+        color: #222;
+        text-align: center;
+        padding: 60px;
+      }
+      .title-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 40px;
+        padding: 70px 50px;
+        width: 90%;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border: 3px solid rgba(255, 255, 255, 0.8);
+      }
+      .title-pill {
+        background: #00A650;
+        color: #FFF;
+        font-size: 32px;
+        font-weight: 900;
+        padding: 14px 40px;
+        border-radius: 30px;
+        letter-spacing: 2px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 25px rgba(0, 166, 80, 0.35);
+      }
+      .title-headline {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 72px;
+        font-weight: 900;
+        line-height: 1.1;
+        text-transform: uppercase;
+        color: #111;
+        margin-bottom: 25px;
+      }
+      .title-sub {
+        font-size: 28px;
+        color: #666;
+        font-weight: 700;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      /* SCENE 2: PRODUCT */
+      #scene-product {
+        background: radial-gradient(circle at 50% 25%, #FFFFFF 0%, #F5F7FA 65%, #E5E9F0 100%);
+        color: #222;
+        padding: 40px;
+      }
+      .product-card {
+        width: 92%;
+        height: 78%;
+        background: #FFFFFF;
+        border-radius: 40px;
+        box-shadow: 0 25px 70px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 30px;
+        border: 1px solid rgba(0,0,0,0.05);
+      }
+      .trust-badges {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        padding: 0 10px;
+      }
+      .badge-full {
+        background: #00A650;
+        color: #FFF;
+        padding: 10px 22px;
+        border-radius: 12px;
+        font-weight: 900;
+        font-size: 24px;
+        box-shadow: 0 6px 16px rgba(0, 166, 80, 0.25);
+      }
+      .badge-protected {
+        background: #EBF4FF;
+        color: #3483FA;
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 22px;
+      }
+      .product-image-box {
+        width: 90%;
+        height: 48%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 15px 0;
+      }
+      .product-img {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+        filter: drop-shadow(0 25px 35px rgba(0,0,0,0.2));
+      }
+      .product-name {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 38px;
+        font-weight: 900;
+        color: #111;
+        text-align: center;
+        margin-bottom: 20px;
+        line-height: 1.2;
+      }
+      .key-points-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 95%;
+      }
+      .key-point-item {
+        background: #F8F9FA;
+        border: 1px solid #E9ECEF;
+        padding: 14px 20px;
+        border-radius: 16px;
+        font-size: 26px;
+        font-weight: 700;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      /* SCENE 3: BIG DISCOUNT & PRICE */
+      #scene-price {
+        background: radial-gradient(circle at 50% 40%, #1A1A2E 0%, #0F0F1A 100%);
+        text-align: center;
+        padding: 50px;
+      }
+      .price-card {
+        width: 92%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        border-radius: 40px;
+        padding: 60px 40px;
+        backdrop-filter: blur(20px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .big-discount-number {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 140px;
+        font-weight: 900;
+        color: #00FF66;
+        text-shadow: 0 0 50px rgba(0, 255, 102, 0.5);
+        line-height: 1;
+        margin-bottom: 10px;
+      }
+      .big-discount-label {
+        font-size: 42px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        color: #FFFFFF;
+        margin-bottom: 50px;
+      }
+      .pricing-box {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+      }
+      .price-orig {
+        font-size: 36px;
+        color: #888;
+        text-decoration: line-through;
+        font-weight: 600;
+      }
+      .price-now {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 90px;
+        font-weight: 900;
+        color: #FFFFFF;
+        background: linear-gradient(180deg, #FFFFFF 30%, #CCCCCC 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      /* SCENE 4: CTA */
+      #scene-cta {
+        background: radial-gradient(circle at 50% 50%, #0056b3 0%, #002244 100%);
+        text-align: center;
+        padding: 50px;
+      }
+      .cta-card {
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .cta-arrow {
+        font-size: 90px;
+        margin-bottom: 30px;
+      }
+      .cta-headline {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 76px;
+        font-weight: 900;
+        line-height: 1.1;
+        color: #FFE600;
+        text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        margin-bottom: 25px;
+      }
+      .cta-sub {
+        font-size: 32px;
+        color: #E2E8F0;
+        font-weight: 700;
+        margin-bottom: 60px;
+      }
+      .cta-button {
+        background: #FFE600;
+        color: #111;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 42px;
+        font-weight: 900;
+        padding: 26px 60px;
+        border-radius: 50px;
+        box-shadow: 0 20px 50px rgba(255, 230, 0, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="12"
+      data-width="1080"
+      data-height="1920"
+    >
+      <!-- HEADER UI -->
+      <div class="header-ui">
+        <div class="live-badge">
+          <div class="live-dot"></div>
+          <span class="live-text">OFERTA DEL DÍA</span>
+        </div>
+        <div class="watermark-badge">
+          Para eso trabajo
+        </div>
+      </div>
+
+      <!-- PROGRESS BAR -->
+      <div class="progress-container">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+
+      <!-- SCENE 1: TITLE -->
+      <div id="scene-title" class="scene">
+        <div class="title-card">
+          <div class="title-pill" id="title-tag">🔥 OFERTAZO</div>
+          <h1 class="title-headline" id="title-text">PRODUCTO INCREÍBLE</h1>
+          <div class="title-sub">
+            <span>En Mercado Libre</span>
+            <span>•</span>
+            <span style="color: #00A650;">Envío Rápido</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 2: PRODUCT -->
+      <div id="scene-product" class="scene">
+        <div class="product-card">
+          <div class="trust-badges">
+            <div class="badge-full">⚡ FULL</div>
+            <div class="badge-protected">🛡️ Compra Protegida</div>
+          </div>
+          <div class="product-image-box">
+            <img id="product-image" class="product-img" src="./public/product.png" alt="Producto" />
+          </div>
+          <h2 class="product-name" id="product-name-text">Nombre del Producto</h2>
+          <div class="key-points-list" id="key-points-container">
+            <!-- Injected by script -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 3: BIG DISCOUNT -->
+      <div id="scene-price" class="scene">
+        <div class="price-card">
+          <div class="big-discount-number" id="discount-number">50%</div>
+          <div class="big-discount-label">DE DESCUENTO</div>
+          <div class="pricing-box">
+            <div class="price-orig" id="price-orig-text">$999.00</div>
+            <div class="price-now" id="price-now-text">$499.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 4: CTA -->
+      <div id="scene-cta" class="scene">
+        <div class="cta-card">
+          <div class="cta-arrow" id="cta-arrow-icon">👇</div>
+          <h1 class="cta-headline">¡LINK EN BIO!</h1>
+          <p class="cta-sub">Aprovecha la oferta antes de que se agote</p>
+          <div class="cta-button" id="cta-btn">
+            <span>VER OFERTA</span>
+            <span>➔</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIO TRACKS -->
+      <audio id="bgm" src="./public/bg_music.mp3" class="clip" data-start="0" data-duration="12" data-volume="0.18"></audio>
+      <audio id="vo" src="./public/voice.mp3" class="clip" data-start="0.3" data-duration="11.5" data-volume="1.0"></audio>
+    </div>
+
+    <script>
+      // 1. Población dinámica de datos
+      const data = window.DEAL_DATA || {};
+      const totalDur = data.total_duration_sec || 12;
+
+      // Actualizar atributos de duración en root y audio
+      const rootEl = document.getElementById('root');
+      rootEl.setAttribute('data-duration', String(totalDur));
+      const bgmEl = document.getElementById('bgm');
+      if (bgmEl) bgmEl.setAttribute('data-duration', String(totalDur));
+      const voEl = document.getElementById('vo');
+      if (voEl) voEl.setAttribute('data-duration', String(Math.max(1, totalDur - 0.5)));
+
+      // Inyectar textos
+      const titleSceneData = data.scenes?.find(s => s.type === 'title') || {};
+      if (titleSceneData.text1) document.getElementById('title-tag').innerText = `🔥 ${titleSceneData.text1}`;
+      if (titleSceneData.text2 || data.product_title) {
+        document.getElementById('title-text').innerText = (titleSceneData.text2 || data.product_title).substring(0, 50);
+      }
+
+      document.getElementById('product-name-text').innerText = (data.product_title || '').substring(0, 60);
+
+      // Key points
+      const keyPointsBox = document.getElementById('key-points-container');
+      const points = data.key_points || ["Gran Calidad", "Garantía Oficial", "Envío Inmediato"];
+      keyPointsBox.innerHTML = points.slice(0, 3).map(p => `
+        <div class="key-point-item">
+          <span style="color: #00A650;">✔</span>
+          <span>${p}</span>
+        </div>
+      `).join('');
+
+      // Precios y descuento
+      const pct = data.discount_percentage || 50;
+      document.getElementById('discount-number').innerText = `${pct}%`;
+      if (data.original_price) {
+        document.getElementById('price-orig-text').innerText = `$${data.original_price}`;
+      } else {
+        document.getElementById('price-orig-text').style.display = 'none';
+      }
+      if (data.offer_price) {
+        document.getElementById('price-now-text').innerText = `$${data.offer_price}`;
+      }
+
+      // 2. Timeline GSAP sincronizada
+      const tl = gsap.timeline({ paused: true });
+
+      // Barra de progreso continua
+      tl.to("#progress-fill", { width: "100%", duration: totalDur, ease: "none" }, 0);
+
+      // Tiempos por escena
+      const s1Duration = totalDur * 0.23; // Intro
+      const s2Duration = totalDur * 0.32; // Producto
+      const s3Duration = totalDur * 0.25; // Precio / Descuento
+      const s4Duration = totalDur * 0.20; // CTA
+
+      const t1Start = 0;
+      const t1End = s1Duration;
+      const t2Start = t1End;
+      const t2End = t2Start + s2Duration;
+      const t3Start = t2End;
+      const t3End = t3Start + s3Duration;
+      const t4Start = t3End;
+      const t4End = totalDur;
+
+      // Escena 1: Title
+      tl.fromTo("#scene-title", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, t1Start);
+      tl.to("#scene-title", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, t1End - 0.4);
+
+      // Escena 2: Product
+      tl.fromTo("#scene-product", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, t2Start);
+      tl.fromTo("#product-image", { scale: 0.95 }, { scale: 1.08, duration: s2Duration, ease: "sine.inOut" }, t2Start);
+      tl.fromTo(".key-point-item", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.3, stagger: 0.2, ease: "power2.out" }, t2Start + 0.3);
+      tl.to("#scene-product", { opacity: 0, y: -30, duration: 0.4, ease: "power2.in" }, t2End - 0.4);
+
+      // Escena 3: Price
+      tl.fromTo("#scene-price", { opacity: 0, scale: 0.88 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, t3Start);
+      tl.fromTo("#discount-number", { scale: 0.7 }, { scale: 1.05, duration: 0.6, ease: "elastic.out(1, 0.5)" }, t3Start + 0.1);
+      tl.to("#scene-price", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, t3End - 0.4);
+
+      // Escena 4: CTA
+      tl.fromTo("#scene-cta", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, t4Start);
+      tl.fromTo("#cta-arrow-icon", { y: -15 }, { y: 15, repeat: 6, yoyo: true, duration: 0.4, ease: "power1.inOut" }, t4Start);
+      tl.fromTo("#cta-btn", { scale: 0.95 }, { scale: 1.05, repeat: 6, yoyo: true, duration: 0.5, ease: "power1.inOut" }, t4Start);
+
+      // Registrar timeline para HyperFrames
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

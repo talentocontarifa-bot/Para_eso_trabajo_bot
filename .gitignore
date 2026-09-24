@@ -1,2 +1,4 @@
 node_modules/
 .env
+video_pet/out/
+*.mp4
