@@ -695,6 +695,8 @@ async function main() {
       }
     }
 
+    require('./build_template').build(__dirname);
+
     console.log(`\n🎉 METADATOS GENERADOS Y GUARDADOS EN ${dealDataPath} y ${dealDataJsPath}`);
     console.log("=========================================");
   } catch (error) {

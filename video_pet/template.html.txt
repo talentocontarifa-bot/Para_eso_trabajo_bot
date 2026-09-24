@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Para eso trabajo</title>
+<script src="assets/gsap.min.js"></script>
+<style>
+@font-face{font-family:PET;src:url('assets/arial.ttf');font-weight:400}@font-face{font-family:PET;src:url('assets/arialbd.ttf');font-weight:700 900}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#faf9f3;font-family:PET,sans-serif;color:#20211d}#root{width:100%;height:100%;position:relative;overflow:hidden}.scene{position:absolute;inset:0;background:#faf9f3}.yellow{background:#fff44c}.brand{position:absolute;top:130px;left:90px;right:120px;display:flex;justify-content:space-between;align-items:center;font-size:36px;font-weight:700;line-height:.96;z-index:10}.brand span{display:block}.mark{font-size:29px;background:#20211d;color:#fff44c;padding:14px}.tag{position:absolute;top:310px;left:90px;font-size:28px;font-weight:700;letter-spacing:3px}h1,h2,p{margin:0}.headline{position:absolute;top:380px;left:85px;font-size:148px;line-height:.92;letter-spacing:-10px;font-weight:700}.headline span{display:block}.photo{position:absolute;object-fit:contain;mix-blend-mode:multiply}.footer{position:absolute;left:90px;right:120px;top:1580px;border-top:2px solid #a1a190;padding-top:30px;font-size:30px;font-weight:700}.photo1{left:160px;top:700px;width:740px;height:830px}.model{position:absolute;top:1450px;left:90px;font-size:32px;font-weight:700}.tease{position:absolute;top:1100px;left:90px;background:#20211d;color:#fff44c;font-size:36px;padding:20px;font-weight:700}.benefit-title{position:absolute;left:90px;top:390px;font-size:112px;line-height:.94;letter-spacing:-7px;width:840px}.battery{position:absolute;left:90px;top:390px;font-size:230px;letter-spacing:-16px;line-height:1;font-weight:700}.battery-copy{position:absolute;top:650px;left:100px;font-size:35px}.photo2{width:700px;height:820px;top:740px;left:330px}.detail{position:absolute;left:90px;top:990px;width:270px;font-size:44px;line-height:1.12;font-weight:700}.detail span{display:block}.old{position:absolute;top:445px;left:90px;font-size:68px;color:#69695b;text-decoration:line-through}.amount{position:absolute;top:550px;left:80px;font-size:215px;font-weight:700;letter-spacing:-17px}.discount{position:absolute;top:820px;left:90px;background:#20211d;color:#fff44c;padding:25px 35px;font-size:43px;font-weight:700}.photo3{width:510px;height:590px;top:990px;left:465px}.price-model{position:absolute;top:1150px;left:90px;width:340px;font-size:38px;line-height:1.25}.photo4{width:600px;height:700px;top:690px;left:240px}.button{position:absolute;top:1430px;left:90px;right:120px;background:#20211d;color:#fff44c;padding:36px;font-size:38px;font-weight:700;display:flex;justify-content:space-between}.captions{position:absolute;left:90px;right:120px;top:1720px;text-align:center;z-index:15}.caption{position:absolute;left:0;right:0;font-size:32px;line-height:1.25;font-weight:700;opacity:0}.line{position:absolute;bottom:0;left:0;width:100%;height:10px;background:#20211d;transform-origin:left;z-index:20}
+</style></head><body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1080" data-height="1920">
+<div id="s1" class="scene clip" data-start="0" data-duration="8.496" data-track-index="0"><div class="tag">SONY WH-1000XM5</div><h1 class="headline" id="hook"><span>Date</span><span>el gusto.</span></h1><img id="p1" class="photo photo1" src="assets/product.png" alt="Sony WH-1000XM5"><div id="tease" class="tease">−40%</div><div class="footer">Tu próximo antojo. En Mercado Libre.</div></div>
+<div id="s2" class="scene yellow clip" data-start="8.496" data-duration="6.288" data-track-index="0"><div class="tag">DALE PLAY A TU MOMENTO</div><h2 id="noise" class="benefit-title">Tu música.<br>Menos ruido.</h2><div id="battery" class="battery">30 h.</div><p id="battery-copy" class="battery-copy">de batería para seguir escuchando.</p><img id="p2" class="photo photo2" src="assets/product.png" alt="Audífonos Sony"><div id="detail" class="detail"><span>Sonido</span><span>Hi-Res.</span></div><div class="footer">SONY WH-1000XM5</div></div>
+<div id="s3" class="scene clip" data-start="14.784" data-duration="8.040" data-track-index="0"><div class="tag">EL GUSTO. A ESTE PRECIO.</div><div id="old" class="old">$8,999</div><div id="amount" class="amount">$5,399</div><div id="discount" class="discount">−40% DE DESCUENTO</div><p class="price-model">Sony WH-1000XM5</p><img id="p3" class="photo photo3" src="assets/product.png" alt="Producto junto a la oferta"><div class="footer">En Mercado Libre · MXN</div></div>
+<div id="s4" class="scene yellow clip" data-start="22.824" data-duration="7.176" data-track-index="0"><div class="tag">TE LO GANASTE.</div><h2 class="headline"><span id="cta1">Para eso</span><span id="cta2">trabajo.</span></h2><img id="p4" class="photo photo4" src="assets/product.png" alt="Audífonos al cierre"><div id="button" class="button"><span>VER OFERTA EN LA BIO</span><span>↗</span></div><div class="footer">Date el gusto.</div></div>
+<div class="brand"><div><span>para eso</span><span>trabajo.</span></div><div class="mark">PET</div></div>
+<div class="captions"><p id="c1" class="caption">Un ofertón en Mercado Libre.</p><p id="c2" class="caption">Sony WH-1000XM5.</p><p id="c3" class="caption">Cancelación de ruido y 30 horas de batería.</p><p id="c4" class="caption">De $8,999 a $5,399 pesos.</p><p id="c5" class="caption">40% de descuento.</p><p id="c6" class="caption">Toca el enlace en nuestro perfil.</p></div>
+<div id="progress" class="line"></div>
+<audio id="voice" class="clip" src="assets/voice.mp3" data-start="0" data-duration="29.208" data-track-index="2" data-volume="1"></audio>
+</div>
+<script>
+const tl=gsap.timeline({paused:true});
+tl.fromTo('#progress',{scaleX:0},{scaleX:1,duration:30,ease:'none'},0);
+tl.fromTo('#hook',{y:35,opacity:0},{y:0,opacity:1,duration:.55,ease:'power3.out'},0);
+tl.fromTo('#p1',{y:30},{y:-20,duration:8.496,ease:'sine.inOut'},0);
+tl.fromTo('#tease',{opacity:0,y:20},{opacity:1,y:0,duration:.4,ease:'power3.out'},5.8);
+tl.fromTo('#noise',{opacity:0,y:25},{opacity:1,y:0,duration:.45,ease:'power3.out'},8.496);
+tl.to('#noise',{opacity:0,duration:.2},11.25);
+tl.fromTo('#battery',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'power3.out'},11.48);
+tl.fromTo('#battery-copy',{opacity:0,y:15},{opacity:1,y:0,duration:.4,ease:'power3.out'},11.7);
+tl.fromTo('#p2',{x:20,y:20},{x:0,y:0,duration:6.288,ease:'sine.inOut'},8.496);
+tl.fromTo('#detail',{opacity:0,y:20},{opacity:1,y:0,duration:.4},12.6);
+tl.fromTo('#old',{opacity:0,y:20},{opacity:1,y:0,duration:.4},14.784);
+tl.fromTo('#amount',{opacity:0,y:40},{opacity:1,y:0,duration:.5,ease:'power3.out'},17.0);
+tl.fromTo('#discount',{opacity:0,y:20},{opacity:1,y:0,duration:.4,ease:'power3.out'},20.5);
+tl.fromTo('#p3',{y:15},{y:-15,duration:8.04,ease:'sine.inOut'},14.784);
+// CTA Close registry choreography, adapted to the approved two-line lockup.
+tl.fromTo(['#cta1','#cta2'],{opacity:0,y:50},{opacity:1,y:0,duration:.62,ease:'power3.out',stagger:.1},22.884);
+tl.fromTo('#button',{scale:.85,y:30},{scale:1,y:0,duration:.6,ease:'back.out(1.5)'},23.544);
+tl.fromTo('#button',{opacity:0},{opacity:1,duration:.22,ease:'power2.out'},23.544);
+tl.fromTo('#p4',{opacity:0,y:25},{opacity:1,y:0,duration:.5,ease:'power3.out'},22.824);
+function caption(id,start,end){tl.fromTo(id,{opacity:0},{opacity:1,duration:.15},start);tl.to(id,{opacity:0,duration:.12},end-.12)}
+caption('#c1',.4,4.6);caption('#c2',4.7,8.496);caption('#c3',8.65,14.784);caption('#c4',15,20.4);caption('#c5',20.5,22.824);caption('#c6',24,29.7);
+window.__timelines=window.__timelines||{};window.__timelines['main']=tl;
+</script></body></html>
+

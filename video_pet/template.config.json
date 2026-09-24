@@ -1,0 +1,8 @@
+{
+  "colors": { "paper": "#faf9f3", "accent": "#fff44c", "ink": "#20211d" },
+  "hook": "Date el gusto.",
+  "cta": "VER OFERTA EN LA BIO",
+  "music": { "file": "public/music_electrodoodle.mp3", "volume": 0.10 },
+  "sfxVolume": 0.22,
+  "closingHold": 0.8
+}
