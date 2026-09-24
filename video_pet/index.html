@@ -469,19 +469,19 @@
       <div class="subtitles-container">
         <div class="subtitle-pill" id="sub-1">
           <span class="subtitle-tag">OFERTA DESTACADA</span>
-          <p class="subtitle-text" id="sub-text-1">¡Super oferta en Mercado Libre! Sony WH-1000XM5.</p>
+          <p class="subtitle-text" id="sub-text-1"></p>
         </div>
         <div class="subtitle-pill" id="sub-2">
           <span class="subtitle-tag">CARACTERÍSTICAS FULL</span>
-          <p class="subtitle-text" id="sub-text-2">Cancelación de ruido líder, 30h de batería y envío FULL.</p>
+          <p class="subtitle-text" id="sub-text-2"></p>
         </div>
         <div class="subtitle-pill" id="sub-3">
           <span class="subtitle-tag">PRECIO ESPECIAL</span>
-          <p class="subtitle-text" id="sub-text-3">De $8,999 a solo $5,399 pesos. ¡40% de descuento!</p>
+          <p class="subtitle-text" id="sub-text-3"></p>
         </div>
         <div class="subtitle-pill" id="sub-4">
           <span class="subtitle-tag">APROVECHA AHORA</span>
-          <p class="subtitle-text" id="sub-text-4">¡Para eso trabajo! Toca el enlace en nuestra bio.</p>
+          <p class="subtitle-text" id="sub-text-4"></p>
         </div>
       </div>
 
@@ -542,14 +542,14 @@
       if (sc1.text2 || data.product_title) {
         document.getElementById('title-text').innerText = (sc1.text2 || data.product_title).substring(0, 50);
       }
-      if (sc1.subtitle) document.getElementById('sub-text-1').innerText = sc1.subtitle;
+      document.getElementById('sub-text-1').innerText = sc1.subtitle || sc1.voice_text || `¡Gran oferta en Mercado Libre!`;
 
       document.getElementById('product-name-text').innerText = (data.product_title || '').substring(0, 60);
-      if (sc2.subtitle) document.getElementById('sub-text-2').innerText = sc2.subtitle;
+      document.getElementById('sub-text-2').innerText = sc2.subtitle || sc2.voice_text || `Calidad garantizada y envío FULL directo a tu puerta.`;
 
       // Key points
       const keyPointsBox = document.getElementById('key-points-container');
-      const points = data.key_points || ["Cancelación de Ruido Líder", "30 Horas de Batería y Carga Rápida", "Sonido Hi-Res con DSEE Extreme"];
+      const points = sc2.key_points || data.key_points || ["Excelente calidad", "Envío FULL directo", "Gran oportunidad"];
       keyPointsBox.innerHTML = points.slice(0, 3).map((p, i) => `
         <div class="key-point-item" id="pet-kp-${i+1}">
           <span style="color: #00A650;">✔</span>
@@ -557,19 +557,24 @@
         </div>
       `).join('');
 
-      // Precios y descuento
-      const pct = data.discount_percentage || 40;
+      // Precios y descuento exactos sincronizados
+      const origPrice = sc3.original_price || data.original_price;
+      const offerPrice = sc3.offer_price || data.offer_price;
+      const pct = sc3.discount_percentage || data.discount_percentage || 40;
+
       document.getElementById('discount-number').innerText = `${pct}%`;
-      if (data.original_price) {
-        document.getElementById('price-orig-text').innerText = `$${data.original_price}`;
+      if (origPrice) {
+        document.getElementById('price-orig-text').innerText = `$${origPrice}`;
+        document.getElementById('price-orig-text').style.display = 'block';
       } else {
         document.getElementById('price-orig-text').style.display = 'none';
       }
-      if (data.offer_price) {
-        document.getElementById('price-now-text').innerText = `$${data.offer_price}`;
+      if (offerPrice) {
+        document.getElementById('price-now-text').innerText = `$${offerPrice}`;
       }
-      if (sc3.subtitle) document.getElementById('sub-text-3').innerText = sc3.subtitle;
-      if (sc4.subtitle) document.getElementById('sub-text-4').innerText = sc4.subtitle;
+
+      document.getElementById('sub-text-3').innerText = sc3.subtitle || (origPrice ? `De $${origPrice} a solo $${offerPrice} pesos. ¡${pct}% de descuento!` : `Por solo $${offerPrice} pesos.`);
+      document.getElementById('sub-text-4').innerText = sc4.subtitle || sc4.voice_text || `¡Para eso trabajo! Toca el enlace en nuestra bio.`;
 
       // 2. Timeline GSAP sincronizada con locución
       const tl = gsap.timeline({ paused: true });
@@ -578,34 +583,39 @@
       tl.to("#progress-fill", { width: "100%", duration: totalDur, ease: "none" }, 0);
 
       // --- ESCENA 1: TITLE (0.0s -> end1) ---
-      tl.fromTo("#scene-title", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, start1);
-      tl.fromTo("#sub-1", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start1 + 0.2);
+      tl.fromTo("#scene-title", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.45, ease: "power2.out" }, start1);
+      tl.fromTo("#sub-1", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, start1 + 0.15);
       tl.to("#sub-1", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, end1 - 0.25);
-      tl.to("#scene-title", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, end1 - 0.4);
+      tl.to("#scene-title", { opacity: 0, scale: 1.05, duration: 0.35, ease: "power2.in" }, end1 - 0.35);
 
       // --- ESCENA 2: PRODUCT (start2 -> end2) ---
-      tl.fromTo("#scene-product", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, start2);
+      tl.fromTo("#scene-product", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, start2);
       tl.fromTo("#product-image", { scale: 0.95 }, { scale: 1.08, duration: Math.max(0.5, end2 - start2), ease: "sine.inOut" }, start2);
-      tl.fromTo("#pet-kp-1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, start2 + 0.8);
-      tl.fromTo("#pet-kp-2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, start2 + 2.0);
-      tl.fromTo("#pet-kp-3", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, start2 + 3.2);
-      tl.fromTo("#sub-2", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start2 + 0.15);
+      tl.fromTo("#pet-kp-1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, start2 + 0.4);
+      tl.fromTo("#pet-kp-2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, start2 + 1.2);
+      tl.fromTo("#pet-kp-3", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, start2 + 2.0);
+      tl.fromTo("#sub-2", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, start2 + 0.15);
       tl.to("#sub-2", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, end2 - 0.25);
-      tl.to("#scene-product", { opacity: 0, y: -30, duration: 0.4, ease: "power2.in" }, end2 - 0.4);
+      tl.to("#scene-product", { opacity: 0, y: -30, duration: 0.35, ease: "power2.in" }, end2 - 0.35);
 
       // --- ESCENA 3: PRICE (start3 -> end3) ---
-      tl.fromTo("#scene-price", { opacity: 0, scale: 0.88 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, start3);
-      tl.fromTo("#discount-number", { scale: 0.7 }, { scale: 1.05, duration: 0.6, ease: "elastic.out(1, 0.5)" }, start3 + 0.2);
-      tl.fromTo("#sub-3", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start3 + 0.15);
+      tl.fromTo("#scene-price", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.5)" }, start3);
+      tl.fromTo("#discount-number", { scale: 0.5, opacity: 0 }, { scale: 1.05, opacity: 1, duration: 0.55, ease: "elastic.out(1, 0.5)" }, start3 + 0.15);
+      if (origPrice) {
+        tl.fromTo("#price-orig-text", { opacity: 0, y: -15 }, { opacity: 0.7, y: 0, duration: 0.35, ease: "power2.out" }, start3 + 0.25);
+      }
+      tl.fromTo("#price-now-text", { scale: 0.7, opacity: 0 }, { scale: 1.15, opacity: 1, duration: 0.45, ease: "back.out(2)" }, start3 + 0.4);
+      tl.to("#price-now-text", { scale: 1.0, duration: 0.2, ease: "power1.out" }, start3 + 0.85);
+      tl.fromTo("#sub-3", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, start3 + 0.15);
       tl.to("#sub-3", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, end3 - 0.25);
-      tl.to("#scene-price", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, end3 - 0.4);
+      tl.to("#scene-price", { opacity: 0, scale: 1.05, duration: 0.35, ease: "power2.in" }, end3 - 0.35);
 
       // --- ESCENA 4: CTA (start4 -> totalDur) ---
-      tl.fromTo("#scene-cta", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, start4);
+      tl.fromTo("#scene-cta", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, start4);
       tl.fromTo("#cta-arrow-icon", { y: -15 }, { y: 15, repeat: 7, yoyo: true, duration: 0.4, ease: "power1.inOut" }, start4);
       tl.fromTo("#cta-btn", { scale: 0.95 }, { scale: 1.05, repeat: 7, yoyo: true, duration: 0.5, ease: "power1.inOut" }, start4);
-      tl.fromTo("#sub-4", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start4 + 0.15);
-      tl.to("#sub-4", { opacity: 0, y: -10, duration: 0.3, ease: "power2.in" }, totalDur - 0.4);
+      tl.fromTo("#sub-4", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, start4 + 0.15);
+      tl.to("#sub-4", { opacity: 0, y: -10, duration: 0.3, ease: "power2.in" }, totalDur - 0.35);
 
       // Registrar timeline para HyperFrames
       window.__timelines = window.__timelines || {};
