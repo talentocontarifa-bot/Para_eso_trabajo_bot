@@ -512,19 +512,31 @@
       const voEl = document.getElementById('vo');
       if (voEl) voEl.setAttribute('data-duration', String(Math.max(1, totalDur - 0.2)));
 
-      // Inyectar textos
-      const sc1 = scenes[0] || { start: 0, end: 9.0 };
-      const sc2 = scenes[1] || { start: 8.7, end: 15.0 };
-      const sc3 = scenes[2] || { start: 15.1, end: 23.2 };
-      const sc4 = scenes[3] || { start: 23.4, end: 30.0 };
+      // Inyectar textos y calcular marcas de tiempo seguras (evita NaN y pantalla negra)
+      const sc1 = scenes[0] || {};
+      const sc2 = scenes[1] || {};
+      const sc3 = scenes[2] || {};
+      const sc4 = scenes[3] || {};
+
+      const start1 = (typeof sc1.start === 'number' && !isNaN(sc1.start)) ? sc1.start : 0;
+      const end1 = (typeof sc1.end === 'number' && !isNaN(sc1.end)) ? sc1.end : Number((totalDur * 0.28).toFixed(2));
+
+      const start2 = (typeof sc2.start === 'number' && !isNaN(sc2.start)) ? sc2.start : end1;
+      const end2 = (typeof sc2.end === 'number' && !isNaN(sc2.end)) ? sc2.end : Number((totalDur * 0.52).toFixed(2));
+
+      const start3 = (typeof sc3.start === 'number' && !isNaN(sc3.start)) ? sc3.start : end2;
+      const end3 = (typeof sc3.end === 'number' && !isNaN(sc3.end)) ? sc3.end : Number((totalDur * 0.78).toFixed(2));
+
+      const start4 = (typeof sc4.start === 'number' && !isNaN(sc4.start)) ? sc4.start : end3;
+      const end4 = (typeof sc4.end === 'number' && !isNaN(sc4.end)) ? sc4.end : totalDur;
 
       // Sincronizar SFX dinámicamente con las marcas de tiempo de las escenas
-      const w1 = document.getElementById('sfx-whoosh1'); if (w1) w1.setAttribute('data-start', String(sc1.start || 0.05));
-      const w2 = document.getElementById('sfx-whoosh2'); if (w2) w2.setAttribute('data-start', String(sc2.start));
-      const pop = document.getElementById('sfx-pop'); if (pop) pop.setAttribute('data-start', String(sc2.start + 0.15));
-      const cash = document.getElementById('sfx-cash'); if (cash) cash.setAttribute('data-start', String(sc3.start));
-      const w3 = document.getElementById('sfx-whoosh3'); if (w3) w3.setAttribute('data-start', String(sc4.start));
-      const ding = document.getElementById('sfx-ding'); if (ding) ding.setAttribute('data-start', String(sc4.start + 0.5));
+      const w1 = document.getElementById('sfx-whoosh1'); if (w1) w1.setAttribute('data-start', String(start1 || 0.05));
+      const w2 = document.getElementById('sfx-whoosh2'); if (w2) w2.setAttribute('data-start', String(start2));
+      const pop = document.getElementById('sfx-pop'); if (pop) pop.setAttribute('data-start', String(start2 + 0.15));
+      const cash = document.getElementById('sfx-cash'); if (cash) cash.setAttribute('data-start', String(start3));
+      const w3 = document.getElementById('sfx-whoosh3'); if (w3) w3.setAttribute('data-start', String(start4));
+      const ding = document.getElementById('sfx-ding'); if (ding) ding.setAttribute('data-start', String(start4 + 0.5));
 
       if (sc1.text1) document.getElementById('title-tag').innerText = `🔥 ${sc1.text1}`;
       if (sc1.text2 || data.product_title) {
@@ -565,34 +577,34 @@
       // Barra de progreso continua
       tl.to("#progress-fill", { width: "100%", duration: totalDur, ease: "none" }, 0);
 
-      // --- ESCENA 1: TITLE (0.0s -> sc1.end) ---
-      tl.fromTo("#scene-title", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, sc1.start);
-      tl.fromTo("#sub-1", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, sc1.start + 0.2);
-      tl.to("#sub-1", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, sc1.end - 0.25);
-      tl.to("#scene-title", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, sc1.end - 0.4);
+      // --- ESCENA 1: TITLE (0.0s -> end1) ---
+      tl.fromTo("#scene-title", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" }, start1);
+      tl.fromTo("#sub-1", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start1 + 0.2);
+      tl.to("#sub-1", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, end1 - 0.25);
+      tl.to("#scene-title", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, end1 - 0.4);
 
-      // --- ESCENA 2: PRODUCT (sc2.start -> sc2.end) ---
-      tl.fromTo("#scene-product", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, sc2.start);
-      tl.fromTo("#product-image", { scale: 0.95 }, { scale: 1.08, duration: (sc2.end - sc2.start), ease: "sine.inOut" }, sc2.start);
-      tl.fromTo("#pet-kp-1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, sc2.start + 1.0);
-      tl.fromTo("#pet-kp-2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, sc2.start + 2.8);
-      tl.fromTo("#pet-kp-3", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, sc2.start + 4.5);
-      tl.fromTo("#sub-2", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, sc2.start + 0.15);
-      tl.to("#sub-2", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, sc2.end - 0.25);
-      tl.to("#scene-product", { opacity: 0, y: -30, duration: 0.4, ease: "power2.in" }, sc2.end - 0.4);
+      // --- ESCENA 2: PRODUCT (start2 -> end2) ---
+      tl.fromTo("#scene-product", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, start2);
+      tl.fromTo("#product-image", { scale: 0.95 }, { scale: 1.08, duration: Math.max(0.5, end2 - start2), ease: "sine.inOut" }, start2);
+      tl.fromTo("#pet-kp-1", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, start2 + 0.8);
+      tl.fromTo("#pet-kp-2", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, start2 + 2.0);
+      tl.fromTo("#pet-kp-3", { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, start2 + 3.2);
+      tl.fromTo("#sub-2", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start2 + 0.15);
+      tl.to("#sub-2", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, end2 - 0.25);
+      tl.to("#scene-product", { opacity: 0, y: -30, duration: 0.4, ease: "power2.in" }, end2 - 0.4);
 
-      // --- ESCENA 3: PRICE (sc3.start -> sc3.end) ---
-      tl.fromTo("#scene-price", { opacity: 0, scale: 0.88 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, sc3.start);
-      tl.fromTo("#discount-number", { scale: 0.7 }, { scale: 1.05, duration: 0.6, ease: "elastic.out(1, 0.5)" }, sc3.start + 0.2);
-      tl.fromTo("#sub-3", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, sc3.start + 0.15);
-      tl.to("#sub-3", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, sc3.end - 0.25);
-      tl.to("#scene-price", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, sc3.end - 0.4);
+      // --- ESCENA 3: PRICE (start3 -> end3) ---
+      tl.fromTo("#scene-price", { opacity: 0, scale: 0.88 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.5)" }, start3);
+      tl.fromTo("#discount-number", { scale: 0.7 }, { scale: 1.05, duration: 0.6, ease: "elastic.out(1, 0.5)" }, start3 + 0.2);
+      tl.fromTo("#sub-3", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start3 + 0.15);
+      tl.to("#sub-3", { opacity: 0, y: -10, duration: 0.25, ease: "power2.in" }, end3 - 0.25);
+      tl.to("#scene-price", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, end3 - 0.4);
 
-      // --- ESCENA 4: CTA (sc4.start -> totalDur) ---
-      tl.fromTo("#scene-cta", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, sc4.start);
-      tl.fromTo("#cta-arrow-icon", { y: -15 }, { y: 15, repeat: 7, yoyo: true, duration: 0.4, ease: "power1.inOut" }, sc4.start);
-      tl.fromTo("#cta-btn", { scale: 0.95 }, { scale: 1.05, repeat: 7, yoyo: true, duration: 0.5, ease: "power1.inOut" }, sc4.start);
-      tl.fromTo("#sub-4", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, sc4.start + 0.15);
+      // --- ESCENA 4: CTA (start4 -> totalDur) ---
+      tl.fromTo("#scene-cta", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, start4);
+      tl.fromTo("#cta-arrow-icon", { y: -15 }, { y: 15, repeat: 7, yoyo: true, duration: 0.4, ease: "power1.inOut" }, start4);
+      tl.fromTo("#cta-btn", { scale: 0.95 }, { scale: 1.05, repeat: 7, yoyo: true, duration: 0.5, ease: "power1.inOut" }, start4);
+      tl.fromTo("#sub-4", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, start4 + 0.15);
       tl.to("#sub-4", { opacity: 0, y: -10, duration: 0.3, ease: "power2.in" }, totalDur - 0.4);
 
       // Registrar timeline para HyperFrames

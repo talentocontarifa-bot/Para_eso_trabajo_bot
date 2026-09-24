@@ -452,18 +452,31 @@ async function generateVoice(script) {
 // ─────────────────────────────────────────
 // 5. DISTRIBUIR FRAMES
 // ─────────────────────────────────────────
-function distributeFrames(scenes, totalFrames) {
-  const weights = { title: 1, image_text: 2, big_percentage: 1.5, cta: 1.5 };
-  const totalWeight = scenes.reduce((acc, s) => acc + (weights[s.type] || 1), 0);
+function distributeFrames(scenes, totalFrames, fps = 30) {
+  const weights = { title: 1, image_text: 2, product: 2, big_percentage: 1.5, price: 1.5, cta: 1.5 };
+  const totalWeight = scenes.reduce((acc, s) => acc + (weights[s.type] || 1.5), 0);
 
   let framesLeft = totalFrames;
+  let currentFrame = 0;
   return scenes.map((scene, i) => {
     const isLast = i === scenes.length - 1;
     const frames = isLast
       ? framesLeft
-      : Math.round((weights[scene.type] || 1) / totalWeight * totalFrames);
+      : Math.round((weights[scene.type] || 1.5) / totalWeight * totalFrames);
     framesLeft -= frames;
-    return { ...scene, durationInFrames: Math.max(frames, 60) }; // Mínimo 2s
+
+    const startSec = Number((currentFrame / fps).toFixed(3));
+    const endSec = Number(((currentFrame + frames) / fps).toFixed(3));
+    currentFrame += frames;
+
+    return {
+      ...scene,
+      durationInFrames: Math.max(frames, 60),
+      frames: Math.max(frames, 60),
+      start: scene.start !== undefined ? scene.start : startSec,
+      end: scene.end !== undefined ? scene.end : endSec,
+      audio_duration: Number((frames / fps).toFixed(3))
+    };
   });
 }
 
@@ -597,6 +610,31 @@ async function main() {
 
     const dealDataJsPath = path.join(__dirname, 'deal_data.js');
     fs.writeFileSync(dealDataJsPath, `window.DEAL_DATA = ${JSON.stringify(metadata, null, 2)};\n`);
+
+    // Sincronizar duración exacta en index.html y hyperframes.json
+    const indexPath = path.join(__dirname, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      try {
+        let indexHtml = fs.readFileSync(indexPath, 'utf-8');
+        indexHtml = indexHtml.replace(/data-duration="[\d.]+"/g, `data-duration="${targetDur}"`);
+        fs.writeFileSync(indexPath, indexHtml);
+        console.log(`✅ index.html sincronizado con data-duration="${targetDur}"`);
+      } catch (e) {
+        console.warn(`⚠️ Error actualizando index.html:`, e.message);
+      }
+    }
+
+    const hfConfigPath = path.join(__dirname, 'hyperframes.json');
+    if (fs.existsSync(hfConfigPath)) {
+      try {
+        const hfConfig = JSON.parse(fs.readFileSync(hfConfigPath, 'utf-8'));
+        hfConfig.compositions[0].duration = targetDur;
+        fs.writeFileSync(hfConfigPath, JSON.stringify(hfConfig, null, 2));
+        console.log(`✅ hyperframes.json actualizado con duración: ${targetDur}s`);
+      } catch (e) {
+        console.warn(`⚠️ Error actualizando hyperframes.json:`, e.message);
+      }
+    }
 
     console.log(`\n🎉 METADATOS GENERADOS Y GUARDADOS EN ${dealDataPath} y ${dealDataJsPath}`);
     console.log("=========================================");
