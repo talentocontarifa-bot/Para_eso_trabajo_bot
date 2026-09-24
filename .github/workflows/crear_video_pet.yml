@@ -52,6 +52,7 @@ jobs:
       - name: Render Video (HyperFrames)
         run: |
           cd video_pet
+          mkdir -p out
           npx hyperframes render -o out/video_final_pet.mp4
 
       - name: Publish to Facebook, Instagram Reels & TikTok
