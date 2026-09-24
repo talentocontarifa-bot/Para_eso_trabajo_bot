@@ -539,9 +539,17 @@ async function main() {
     const destImagePath1 = path.join(__dirname, 'public', 'product.png');
     const destImagePath2 = path.join(__dirname, 'public', 'product_2.png');
     
-    const candidateImages = (scrapeResult.images && scrapeResult.images.length > 0)
+    const rawCandidates = (scrapeResult.images && scrapeResult.images.length > 0)
         ? scrapeResult.images
         : (scrapeResult.imageUrl ? [scrapeResult.imageUrl] : []);
+
+    // Filtrar banners, logotipos y asegurar que sean imágenes del producto
+    const candidateImages = rawCandidates.filter(u => {
+      if (!u || typeof u !== 'string') return false;
+      const lower = u.toLowerCase();
+      if (lower.includes('banner') || lower.includes('logo') || lower.includes('pixel') || lower.includes('plus')) return false;
+      return true;
+    });
 
     let image1Downloaded = false;
     let image2Downloaded = false;

@@ -196,15 +196,20 @@ async function scrapeWithPlaywright(url) {
             }
             
             let images = [];
-            const allImgEls = Array.from(document.querySelectorAll('.ui-pdp-gallery img, .ui-pdp-gallery__figure img, .poly-card img, img.poly-component__picture, img'));
-            for (const img of allImgEls) {
+            if (ogImage && ogImage.includes('D_NQ_NP_')) {
+                images.push(ogImage);
+            }
+            const productImgEls = Array.from(document.querySelectorAll('.ui-pdp-gallery img, .ui-pdp-gallery__figure img, img.poly-component__picture'));
+            for (const img of productImgEls) {
                 const src = img.getAttribute('data-zoom') || img.src || img.getAttribute('data-src');
-                if (src && !src.includes('pixel') && !src.includes('data:image') && !src.includes('favicon') && !src.includes('logo')) {
+                if (src && src.includes('D_NQ_NP_') && !src.includes('pixel') && !src.includes('banner')) {
                     const highRes = src.replace('-I.jpg', '-O.jpg').replace('-V.jpg', '-O.jpg').replace('-I.webp', '-O.webp');
                     if (!images.includes(highRes)) images.push(highRes);
                 }
             }
-            if (ogImage && !images.includes(ogImage)) images.unshift(ogImage);
+            if (images.length === 0 && ogImage) {
+                images.push(ogImage);
+            }
 
             const isPausedOrSoldOut = !!(
                 document.querySelector('.ui-pdp-buybox__sold-out') ||
