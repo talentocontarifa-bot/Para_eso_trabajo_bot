@@ -9,30 +9,56 @@ window.DEAL_DATA = {
     "30 Horas de Batería y Carga Rápida",
     "Sonido Hi-Res con DSEE Extreme"
   ],
-  "script": "¡Ofertón exclusivo! Audífonos premium Sony WH-1000XM5 con 40% de descuento. Llévatelos hoy por solo 5,399 pesos en lugar de 8,999. La mejor cancelación de ruido de la industria, hasta 30 horas de batería y envío rápido FULL en Mercado Libre. No te quedes sin los tuyos, enlace oficial disponible en la biografía. ¡Para eso trabajo!",
-  "total_duration_sec": 12,
+  "total_duration_sec": 32,
+  "total_frames": 960,
   "scenes": [
     {
+      "id": "scene_1",
       "type": "title",
       "text1": "SUPER OFERTA",
       "text2": "SONY WH-1000XM5",
-      "duration": 2.5
+      "voice_text": "¡Atención compradores! Encontramos un ofertón irresistible en Mercado Libre para los audífonos Sony WH-1000XM5.",
+      "subtitle": "¡Super oferta en Mercado Libre! Sony WH-1000XM5.",
+      "start": 0.0,
+      "audio_duration": 9.024,
+      "end": 9.024
     },
     {
-      "type": "image_text",
-      "text": "Sony WH-1000XM5",
-      "duration": 3.5
+      "id": "scene_2",
+      "type": "product",
+      "product_title": "Sony WH-1000XM5 Noise Cancelling",
+      "key_points": [
+        "Cancelación de Ruido Líder",
+        "30 Horas de Batería y Carga Rápida",
+        "Sonido Hi-Res con DSEE Extreme"
+      ],
+      "voice_text": "Cuentan con la mejor cancelación de ruido de la industria, treinta horas continuas de batería y envío rápido FULL.",
+      "subtitle": "Cancelación de ruido líder, 30h de batería y envío FULL.",
+      "start": 9.224,
+      "audio_duration": 6.84,
+      "end": 16.064
     },
     {
-      "type": "big_percentage",
-      "number": 40,
-      "text": "DE DESCUENTO",
-      "duration": 3.0
+      "id": "scene_3",
+      "type": "price",
+      "discount_percentage": 40,
+      "original_price": "8,999.00",
+      "offer_price": "5,399.00",
+      "voice_text": "Bajan de ocho mil novecientos noventa y nueve a solo cinco mil trescientos noventa y nueve pesos. ¡Un cuarenta por ciento de descuento!",
+      "subtitle": "De $8,999 a solo $5,399 pesos. ¡40% de descuento!",
+      "start": 16.264,
+      "audio_duration": 8.184,
+      "end": 24.448
     },
     {
+      "id": "scene_4",
       "type": "cta",
-      "text": "¡LINK EN BIO!",
-      "duration": 3.0
+      "headline": "¡LINK EN BIO!",
+      "voice_text": "¡Para eso trabajo! Consigue los tuyos antes de que se agoten tocando el enlace directo en nuestro perfil.",
+      "subtitle": "¡Para eso trabajo! Toca el enlace en nuestra bio.",
+      "start": 24.648,
+      "audio_duration": 6.84,
+      "end": 31.488
     }
   ]
 };
