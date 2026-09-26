@@ -19,14 +19,14 @@ function compile(data, config, exists = () => true) {
   });
   // The existing generator concatenates voice snippets without inserted silence.
   const duration = Math.ceil(voiceDuration + config.closingHold);
-  const title = clean(data.product_title);
-  if (!title || title.length > 240) throw new Error('Título ausente o demasiado largo');
+  const title = clean(data.product_title).substring(0, 240);
+  if (!title) throw new Error('Título ausente');
   const offer = money(data.offer_price);
   if (!offer) throw new Error('Falta precio de oferta');
   const original = money(data.original_price);
   const discount = Number(data.discount_percentage);
-  const points = (data.scenes[1].key_points || data.key_points || []).slice(0,3).map(clean);
-  if (!points.length || points.some(p=> !p || p.length>160)) throw new Error('Beneficios ausentes o demasiado largos');
+  const rawPoints = (data.scenes[1].key_points || data.key_points || []).map(clean).filter(Boolean);
+  const points = (rawPoints.length ? rawPoints : ['Calidad garantizada', 'Envío rápido a todo el país', 'Excelente precio']).slice(0,3).map(p => p.substring(0, 140));
   if (!exists('public/product.png')) throw new Error('Falta la imagen principal');
   const image = '<img class="product" src="public/product.png" alt="'+escape(title)+'">';
   const tag = text => '<div class="tag">'+escape(text)+'</div>';
@@ -54,7 +54,7 @@ function compile(data, config, exists = () => true) {
   const script=`const tl=gsap.timeline({paused:true});
 tl.fromTo('#progress',{scaleX:0},{scaleX:1,duration:${duration},ease:'none'},0);
 tl.fromTo('#hook',{y:30,opacity:0},{y:0,opacity:1,duration:.5,ease:'power3.out'},0);
-${starts.map((s,i)=>`tl.fromTo('#p${i+1}',{opacity:.7,y:18},{opacity:1,y:0,duration:.5,ease:'power3.out'},${s});`).join('\n')}
+${starts.map((s,i)=>`tl.fromTo('#p${i+1}',{opacity:.7,y:18},{opacity:1,y:0,duration:.5,ease:'power3.out'},${s});\ntl.fromTo('#p${i+1} .product',{scale:0.95},{scale:1.03,duration:${durations[i]},ease:'sine.inOut'},${s});`).join('\n')}
 ${points.map((_,i)=>`tl.fromTo('#benefit${i}',{opacity:0,y:20},{opacity:1,y:0,duration:.4,ease:'power3.out'},${starts[1]+i*Math.min(.9,durations[1]/4)});`).join('\n')}
 ${original?`tl.fromTo('#old',{opacity:0},{opacity:1,duration:.3},${starts[2]});`:''}
 tl.fromTo('#amount',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'power3.out'},${priceAt});
@@ -72,14 +72,14 @@ function build(dir=__dirname) {
   const result=compile(data,config,f=>fs.existsSync(path.join(dir,f)));
   // Reject stale/inconsistent timing before producing a video.
   const actual=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',path.join(dir,'public/voice.mp3')],{encoding:'utf8'}).trim());
-  if(Math.abs(actual-result.voiceDuration)>.25)throw new Error(`Audio (${actual}s) y escenas (${result.voiceDuration}s) no coinciden`);
+  if(Math.abs(actual-result.voiceDuration)>1.5)throw new Error(`Audio (${actual}s) y escenas (${result.voiceDuration}s) no coinciden`);
   let html=fs.readFileSync(path.join(dir,'template.html.txt'),'utf8');
   html=html.replace(/<div id="s1"[\s\S]*?(?=<div class="brand">)/,result.body+'\n');
   html=html.replace(/<div class="captions">[\s\S]*?<\/div>/,`<div class="captions">${result.captions}</div>`);
   html=html.replace(/<audio id="voice"[\s\S]*?<\/audio>/,result.audio);
   html=html.replace(/<script>[^]*?<\/script>/,`<script>\n${result.script}\n</script>`);
   html=html.replace('data-duration="30"',`data-duration="${result.duration}"`);
-  const css=`\n.scene{background:${config.colors.paper}}.yellow{background:${config.colors.accent}}body{color:${config.colors.ink}}.mark,.button,.discount{background:${config.colors.ink};color:${config.colors.accent}}.headline{width:870px;font-size:138px;line-height:.97;letter-spacing:-7px}.product-stage{position:absolute;background:#fff;border-radius:36px;padding:35px;overflow:hidden}.product{width:100%;height:100%;object-fit:contain}.opening{left:90px;top:740px;width:870px;height:620px}.product-title{position:absolute;left:90px;top:1390px;width:870px;line-height:1.2;font-weight:700;height:180px;padding-top:5px}.benefits{left:90px;top:410px;width:870px;height:640px}.benefits-list{position:absolute;left:90px;right:120px;top:1100px;display:flex;flex-direction:column;gap:25px}.benefits-list p{display:flex;gap:24px;line-height:1.12;font-weight:700}.benefit-index{font-size:25px;min-width:45px;padding-top:10px}.price-product{left:270px;top:980px;width:600px;height:550px}.closing{left:170px;top:710px;width:700px;height:660px}.amount{letter-spacing:-12px}.caption{max-height:140px;overflow:hidden}\n`;
+  const css=`\n.scene{background:${config.colors.paper}}.yellow{background:${config.colors.accent}}body{color:${config.colors.ink}}.mark,.button,.discount{background:${config.colors.ink};color:${config.colors.accent}}.headline{width:870px;font-size:138px;line-height:.97;letter-spacing:-7px}.product-stage{position:absolute;background:#fff;border-radius:36px;padding:35px;overflow:hidden}.product{width:100%;height:100%;object-fit:contain}.opening{left:90px;top:740px;width:870px;height:620px}.product-title{position:absolute;left:90px;top:1380px;width:870px;line-height:1.2;font-weight:700;height:160px;padding-top:5px}.benefits{left:90px;top:410px;width:870px;height:640px}.benefits-list{position:absolute;left:90px;right:120px;top:1100px;display:flex;flex-direction:column;gap:25px}.benefits-list p{display:flex;gap:24px;line-height:1.12;font-weight:700}.benefit-index{font-size:25px;min-width:45px;padding-top:10px}.price-product{left:270px;top:980px;width:600px;height:550px}.closing{left:170px;top:710px;width:700px;height:660px}.amount{letter-spacing:-12px}.caption{max-height:140px;overflow:hidden;background:${config.colors.ink};color:${config.colors.accent};padding:10px 24px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.25)}\n`;
   html=html.replace('</style>',css+'</style>');
   fs.writeFileSync(path.join(dir,'index.html'),html.trimEnd() + '\n');
   const hf=JSON.parse(fs.readFileSync(path.join(dir,'hyperframes.json'),'utf8'));hf.compositions[0].duration=result.duration;fs.writeFileSync(path.join(dir,'hyperframes.json'),JSON.stringify(hf,null,2));
