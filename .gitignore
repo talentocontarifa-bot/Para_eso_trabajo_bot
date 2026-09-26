@@ -3,3 +3,4 @@ node_modules/
 video_pet/out/
 *.mp4
 video_pet/temp_voice/
+tiktok_tokens.json
