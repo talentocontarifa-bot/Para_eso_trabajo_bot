@@ -184,6 +184,35 @@ async function publishAll() {
   console.log(`▶️  YouTube Shorts:   ${results.youtube?.success ? '✅ PUBLICADO' : (results.youtube?.error ? `❌ ERROR (${results.youtube.error})` : '⚠️ OMITIDO')}`);
   console.log(`📘 Facebook Page:    ${results.facebook?.success ? '✅ PUBLICADO' : (results.facebook?.error ? `❌ ERROR (${results.facebook.error})` : '⚠️ OMITIDO')}`);
   console.log('====================================================\n');
+
+  // Si este video provino de un issue abierto y se publicó exitosamente, cerramos el issue
+  try {
+    const rawDealData = fs.readFileSync(DEAL_DATA_PATH, 'utf-8');
+    const dealData = JSON.parse(rawDealData);
+    if (dealData && dealData.issue_number) {
+      const anySuccess = results.tiktok?.success || results.instagram?.success || results.youtube?.success || results.facebook?.success;
+      if (anySuccess) {
+        console.log(`🔒 Cerrando Issue #${dealData.issue_number} tras publicación exitosa...`);
+        const commentLines = [
+          `🎉 **¡Video generado y publicado automáticamente!**`,
+          results.youtube?.success ? `▶️ **YouTube Short:** ${results.youtube.url || 'Publicado'}` : null,
+          results.instagram?.success ? `📸 **Instagram Reel:** Media ID \`${results.instagram.id || 'Publicado'}\`` : null,
+          results.tiktok?.success ? `🎵 **TikTok:** Enviado a bandeja de entrada de creador` : null,
+        ].filter(Boolean).join('\n');
+
+        const cleanComment = commentLines.replace(/"/g, '\\"');
+        try {
+          execSync(`gh issue comment ${dealData.issue_number} --body "${cleanComment}"`, { stdio: 'inherit' });
+          execSync(`gh issue close ${dealData.issue_number}`, { stdio: 'inherit' });
+          console.log(`✅ Issue #${dealData.issue_number} cerrado con éxito en GitHub.`);
+        } catch (ghErr) {
+          console.warn(`⚠️ Error ejecutando gh CLI para cerrar issue #${dealData.issue_number}:`, ghErr.message);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("⚠️ No se pudo procesar cierre automático de issue:", e.message);
+  }
 }
 
 publishAll();

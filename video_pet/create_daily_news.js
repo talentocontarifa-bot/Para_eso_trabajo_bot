@@ -40,7 +40,38 @@ async function getRecentProductData() {
   const todayStr = `${year}-${month}-${day}`;
   console.log(`📅 Fecha de hoy (México/Col): ${todayStr}`);
 
-  // B. Intentar leer queue.json
+  // 1. PRIORIDAD MÁXIMA: Issues abiertos en GitHub (el pool que alimentas)
+  try {
+    console.log("🔍 Verificando pool de issues abiertos en GitHub...");
+    const openIssuesJson = execSync('gh issue list --state open --json number,title,body --limit 30').toString();
+    const openIssues = JSON.parse(openIssuesJson);
+    const urlRegex = /(https?:\/\/[^\s]+)/;
+
+    // Ordenar FIFO (número menor primero, es decir, el más antiguo que se abrió)
+    const sortedOpen = openIssues.sort((a, b) => a.number - b.number);
+    for (const issue of sortedOpen) {
+      const match = (issue.body || '').match(urlRegex) || issue.title.match(urlRegex);
+      if (match) {
+        const url = match[1];
+        console.log(`🎯 ¡ENCONTRADO CANDIDATO EN POOL DE ISSUES! Issue #${issue.number}: "${issue.title}" -> ${url}`);
+        return {
+          link: url,
+          queueItem: {
+            producto: issue.title,
+            precio: null,
+            descuento: null,
+            copy: issue.body || '',
+            issue_number: issue.number,
+            is_issue: true
+          }
+        };
+      }
+    }
+  } catch (e) {
+    console.warn("⚠️ No se pudieron obtener candidatos de open issues vía GH CLI:", e.message);
+  }
+
+  // 2. Si no hay issues abiertos, revisar queue.json
   const queuePath = path.join(__dirname, '..', 'queue.json');
   let queueItems = [];
   if (fs.existsSync(queuePath)) {
@@ -52,18 +83,17 @@ async function getRecentProductData() {
     }
   }
 
-  // 1. Si hay un item programado específicamente para HOY, lo usamos directamente sin deduplicar
+  // Si hay un item programado específicamente para HOY en queue.json
   const todayItem = queueItems.find(item => item.scheduled_date && item.scheduled_date.startsWith(todayStr));
   if (todayItem && todayItem.link) {
     console.log(`🎯 Encontrada oferta programada específicamente para hoy en queue.json (ID: ${todayItem.id}): ${todayItem.producto}`);
     return { link: todayItem.link, queueItem: todayItem };
   }
 
-  // 2. Si no hay item para hoy, recopilamos candidatos para elegir dinámicamente un candidato fresco (que no tenga video reciente)
-  console.log("🔄 Buscando candidatos frescos de queue.json y closed issues...");
+  // Recopilar candidatos de queue.json y closed issues
+  console.log("🔄 Buscando candidatos frescos de queue.json...");
   const candidatesMap = new Map();
 
-  // Candidatos de queue.json
   queueItems.forEach(item => {
     if (item.link) {
       candidatesMap.set(item.link, {
@@ -75,35 +105,6 @@ async function getRecentProductData() {
       });
     }
   });
-
-  // Candidatos de open issues (lo más nuevo y prioritario)
-  try {
-    const openIssuesJson = execSync('gh issue list --state open --json number,title,body --limit 20').toString();
-    const openIssues = JSON.parse(openIssuesJson);
-    const urlRegex = /(https?:\/\/[^\s]+)/;
-
-    for (const issue of openIssues) {
-      const match = (issue.body || '').match(urlRegex) || issue.title.match(urlRegex);
-      if (match) {
-        const url = match[1];
-        if (!candidatesMap.has(url)) {
-          candidatesMap.set(url, {
-            link: url,
-            producto: issue.title,
-            precio: null,
-            descuento: null,
-            copy: issue.body || '',
-            priority: true
-          });
-        }
-      }
-    }
-    if (openIssues.length > 0) {
-      console.log(`🔥 Se encontraron ${openIssues.length} issues abiertos para priorizar.`);
-    }
-  } catch (e) {
-    console.warn("⚠️ No se pudieron obtener candidatos de open issues vía GH CLI:", e.message);
-  }
 
   // Candidatos de closed issues (vía gh CLI)
   try {
@@ -647,6 +648,7 @@ async function main() {
     metadata.total_duration_sec = targetDur;
     metadata.total_frames = voiceInfo.totalFrames;
     metadata.affiliate_link = productLink;
+    metadata.issue_number = queueItem.issue_number || null;
 
     // Procesar música temática con Sidechain Ducking automático
     const musicSrc = path.join(__dirname, 'public', 'music_electrodoodle.mp3');

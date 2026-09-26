@@ -23,8 +23,8 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get install -y ffmpeg
 
-      - name: Install edge-tts (TTS fallback)
-        run: pip install edge-tts
+      - name: Install Python dependencies (edge-tts & scrapling)
+        run: pip install edge-tts scrapling
 
       - name: Install Root dependencies
         run: npm ci || npm install
