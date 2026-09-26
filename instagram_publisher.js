@@ -18,9 +18,13 @@ try {
   axios = require('axios');
 } catch (e) {
   try {
-    axios = require(path.join(__dirname, 'video_tct', 'node_modules', 'axios'));
+    axios = require(path.join(__dirname, 'video_pet', 'node_modules', 'axios'));
   } catch (e2) {
-    throw e;
+    try {
+      axios = require(path.join(__dirname, 'video_tct', 'node_modules', 'axios'));
+    } catch (e3) {
+      throw e;
+    }
   }
 }
 require('dotenv').config({ path: path.join(__dirname, '.env') });
