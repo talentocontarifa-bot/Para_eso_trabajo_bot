@@ -3,7 +3,9 @@ name: Crear Video PET
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 15 * * *'  # 9:00 AM America/Mexico_City (UTC-6) / 10:00 AM UTC-5
+    - cron: '0 15 * * *'  # 9:00 AM America/Mexico_City (UTC-6) / 10:00 AM Colombia (UTC-5)
+    - cron: '0 20 * * *'  # 2:00 PM America/Mexico_City (UTC-6) / 3:00 PM Colombia (UTC-5)
+    - cron: '0 1 * * *'   # 7:00 PM America/Mexico_City (UTC-6) / 8:00 PM Colombia (UTC-5)
 
 jobs:
   render-video:
@@ -77,6 +79,14 @@ jobs:
         run: |
           cd video_pet
           node publish_video.js
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "paraesotrabajo-bot"
+          git config --global user.email "paraesotrabajo.bot@gmail.com"
+          git add video_pet/used_video_deals.json
+          git commit -m "chore: update processed deals video history [skip ci]" || echo "No changes to commit"
+          git push origin main || echo "No changes to push"
 
       - name: Upload Artifact (backup)
         uses: actions/upload-artifact@v4
