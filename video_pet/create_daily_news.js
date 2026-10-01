@@ -446,8 +446,10 @@ function sanitizeTtsText(text) {
 
 async function synthesizeSnippet(text, outputPath) {
   const clean = sanitizeTtsText(text);
+  const ttsEngine = (process.env.TTS_ENGINE || 'kokoro').toLowerCase();
 
-  if (ELEVENLABS_API_KEY) {
+  // 1. ElevenLabs si está configurado explícitamente y hay API key
+  if (ttsEngine === 'elevenlabs' && ELEVENLABS_API_KEY) {
     try {
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
@@ -480,16 +482,50 @@ async function synthesizeSnippet(text, outputPath) {
     }
   }
 
-  // Fallback: edge-tts (es-MX-DaliaNeural)
-  const safeScript = clean.replace(/"/g, "'").replace(/\n/g, ' ');
-  const rawAudioPath = outputPath.replace(/\.mp3$/, '_raw.mp3');
-  execSync(
-    `edge-tts --voice es-MX-DaliaNeural --rate="+10%" --text "${safeScript}" --write-media "${rawAudioPath}"`,
-    { timeout: 45000 }
-  );
-  const filterChain = "highpass=f=80,equalizer=f=140:width_type=h:width=60:g=3.5,equalizer=f=3600:width_type=h:width=1200:g=4.0,acompressor=threshold=-16dB:ratio=4:attack=10:release=120:makeup=2.5dB,loudnorm=I=-14:TP=-1.0:LRA=7";
-  execSync(`ffmpeg -y -i "${rawAudioPath}" -af "${filterChain}" -c:a libmp3lame -b:a 192k "${outputPath}"`, { stdio: 'pipe' });
-  try { if (fs.existsSync(rawAudioPath)) fs.unlinkSync(rawAudioPath); } catch (e) {}
+  // 2. Kokoro TTS (em_alex o ef_dora con Masterización Broadcast)
+  if (ttsEngine !== 'edge' && ttsEngine !== 'google') {
+    try {
+      const { execFileSync } = require('child_process');
+      const kokoroScript = path.join(__dirname, 'synthesize_kokoro.py');
+      const voice = process.env.KOKORO_VOICE || 'em_alex';
+      const speed = process.env.KOKORO_SPEED || '1.05';
+      const pythonBin = process.env.PYTHON_PATH || 'python';
+      execFileSync(pythonBin, [
+        kokoroScript,
+        '--text', clean,
+        '--voice', voice,
+        '--speed', String(speed),
+        '--out', outputPath
+      ], { stdio: 'pipe', timeout: 120000 });
+      if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
+        return;
+      }
+    } catch (kokoroErr) {
+      // Continuar al respaldo de edge-tts
+    }
+  }
+
+  // 3. Respaldo: edge-tts (es-MX-DaliaNeural con masterización broadcast)
+  try {
+    const { execFileSync } = require('child_process');
+    const rawAudioPath = outputPath.replace(/\.mp3$/, '_raw.mp3');
+    execFileSync('python', [
+      '-m', 'edge_tts',
+      '--voice', process.env.EDGE_VOICE || 'es-MX-DaliaNeural',
+      '--rate', '+10%',
+      '--text', clean,
+      '--write-media', rawAudioPath
+    ], { stdio: 'pipe', timeout: 45000 });
+
+    if (fs.existsSync(rawAudioPath) && fs.statSync(rawAudioPath).size > 1000) {
+      const filterChain = "highpass=f=80,equalizer=f=140:width_type=h:width=60:g=3.5,equalizer=f=3600:width_type=h:width=1200:g=4.0,acompressor=threshold=-16dB:ratio=4:attack=10:release=120:makeup=2.5dB,loudnorm=I=-14:TP=-1.0:LRA=7";
+      execFileSync(process.env.FFMPEG_PATH || 'ffmpeg', ['-y', '-i', rawAudioPath, '-af', filterChain, '-c:a', 'libmp3lame', '-b:a', '192k', outputPath], { stdio: 'pipe' });
+      try { if (fs.existsSync(rawAudioPath)) fs.unlinkSync(rawAudioPath); } catch (e) {}
+      return;
+    }
+  } catch (edgeErr) {
+    console.warn(`⚠️ Error en edge-tts (${edgeErr.message})`);
+  }
 }
 
 async function generateVoice(scenes) {
