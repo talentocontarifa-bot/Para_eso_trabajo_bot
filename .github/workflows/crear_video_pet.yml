@@ -25,11 +25,11 @@ jobs:
       - name: Update apt package database
         run: sudo apt-get update
 
-      - name: Install ffmpeg and espeak-ng
-        run: sudo apt-get install -y ffmpeg espeak-ng
+      - name: Install ffmpeg
+        run: sudo apt-get install -y ffmpeg
 
-      - name: Install Python dependencies (kokoro, edge-tts & scrapling)
-        run: pip install edge-tts scrapling kokoro soundfile
+      - name: Install Python dependencies (edge-tts & scrapling)
+        run: pip install edge-tts scrapling
 
       - name: Install Root dependencies
         run: npm ci || npm install
