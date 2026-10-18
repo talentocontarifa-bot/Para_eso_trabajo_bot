@@ -199,7 +199,8 @@ async function publishVideoToTikTok(videoFilePath, options = {}) {
   }
 
   const title = options.title || 'Talento con Tarifa #TalentoConTarifa #InteligenciaArtificial #Emprendedores';
-  const privacyLevel = options.privacy_level || 'SELF_ONLY';
+  const supportedPrivacy = Array.isArray(creatorInfo?.privacy_level_options) ? creatorInfo.privacy_level_options : [];
+  const privacyLevel = options.privacy_level || (supportedPrivacy.includes('PUBLIC_TO_EVERYONE') ? 'PUBLIC_TO_EVERYONE' : 'SELF_ONLY');
 
   let mode = 'DIRECT_POST';
   let initUrl = 'https://open.tiktokapis.com/v2/post/publish/video/init/';
