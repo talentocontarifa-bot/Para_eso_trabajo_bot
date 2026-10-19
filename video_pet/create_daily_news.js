@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { getAudioDurationInSeconds } = require('get-audio-duration');
 const { scrapeProduct } = require('../scraper');
@@ -8,7 +9,9 @@ const { scrapeProduct } = require('../scraper');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const ELEVENLABS_VOICE_ID = 'pVSoAhDpVO8HBRVURsj5'; // Voz profesional
+// Voz femenina joven y entusiasta GRATIS en API (Laura: FGY2WhTYpPnrIDTdsKH5 | Jessica: cgSgspJ2msm6clMCkdW9)
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'FGY2WhTYpPnrIDTdsKH5';
+const ELEVENLABS_MODEL_ID = process.env.ELEVENLABS_MODEL_ID || 'eleven_v4';
 const FPS = 30;
 
 if (!GEMINI_API_KEY && !GROQ_API_KEY) {
@@ -232,66 +235,104 @@ async function generateDealMetadata(data) {
   """
   `;
 
-  const prompt = `Actúa como el mejor director creativo, copywriter y creador de contenido de "Para eso trabajo".
-Tu filosofía y lema de marca es: "¡Date el gusto, para eso trabajas!"
-La gente se esfuerza duro toda la semana y se merece consentirse con ofertones reales.
-Tu misión: crear un video publicitario irresistible, magnético y antojador (vertical 9:16) para TikTok/Instagram Reels sobre esta oferta real:
+  const offerNum = parseFloat(cleanPrice);
+  const origNum = parseFloat(cleanOriginalPrice || '0');
+  const savingsAmount = (origNum > offerNum) ? Math.round(origNum - offerNum) : '';
+  const discNum = parseInt(cleanDiscount || '0', 10);
+  const roundedDecade = discNum >= 15 ? Math.floor(discNum / 10) * 10 : discNum;
+  const isRoundedPlus = discNum >= 15 && (discNum % 10 !== 0);
+  const spokenDiscount = isRoundedPlus
+    ? `más del ${roundedDecade} por ciento de descuento`
+    : `${discNum} por ciento de descuento`;
+  const visualDiscount = isRoundedPlus
+    ? `MÁS DEL ${roundedDecade}% DE DESCUENTO`
+    : `${discNum}% DE DESCUENTO`;
+  const badgeDiscount = isRoundedPlus ? `+${roundedDecade}% OFF` : `−${discNum}% OFF`;
+
+  function normalizeDealScript(parsedObj) {
+    if (!parsedObj || !Array.isArray(parsedObj.scenes)) return parsedObj;
+    const numberWords = {
+      1: 'uno', 2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco', 6: 'seis', 7: 'siete', 8: 'ocho', 9: 'nueve'
+    };
+    const decadeWords = {
+      10: 'diez', 20: 'veinte', 30: 'treinta', 40: 'cuarenta', 50: 'cincuenta',
+      60: 'sesenta', 70: 'setenta', 80: 'ochenta', 90: 'noventa'
+    };
+    if (isRoundedPlus && decadeWords[roundedDecade]) {
+      const unit = discNum % 10;
+      const exactSpoken = `${decadeWords[roundedDecade]} y ${numberWords[unit]}`;
+      const exactRegex = new RegExp(`(un\\s+|del\\s+)?(${exactSpoken}|${discNum})\\s*(%|por\\s+ciento)(\\s+de\\s+descuento)?`, 'gi');
+      parsedObj.scenes.forEach(sc => {
+        if (sc.voice_text) {
+          sc.voice_text = sc.voice_text.replace(exactRegex, `más del ${decadeWords[roundedDecade]} por ciento de descuento`);
+          sc.voice_text = sc.voice_text.replace(/más del más del/gi, 'más del');
+        }
+        if (sc.subtitle) {
+          sc.subtitle = sc.subtitle.replace(new RegExp(`[-−]?${discNum}%`, 'g'), `+${roundedDecade}%`);
+        }
+      });
+    }
+    // Garantizar que se mencione Mercado Libre en el guion hablado
+    const allVoice = parsedObj.scenes.map(s => s.voice_text || '').join(' ').toLowerCase();
+    if (!allVoice.includes('mercado libre')) {
+      if (parsedObj.scenes[0]?.voice_text) {
+        parsedObj.scenes[0].voice_text = parsedObj.scenes[0].voice_text.replace(/\.?\s*$/, ' en Mercado Libre.');
+      }
+    }
+    return parsedObj;
+  }
+
+  const prompt = `Actúa como el mejor vendedor de respuesta directa y creador de anuncios agresivos de Mercado Libre / TikTok para "Para eso trabajo".
+Tu misión: crear un video vertical 9:16 AGRESIVO, DIRECTO AL GRANO y ULTRA VENDEDOR sobre esta oferta real en Mercado Libre:
 ${productInfo}
+AHORRO EN PESOS: ${savingsAmount ? '$' + savingsAmount + ' MXN' : 'Descuento directo'}
 
-REGLAS DE ORO DE COPYWRITING (HAY QUE ANTOJARLO):
-- Tono: Cómplice, entusiasta, antojador, cercano y conversacional (español latino/mexicano natural, con chispa y deseo).
-- PROHIBIDAS las frases corporativas o aburridas de catálogo como "Excelente calidad", "Envío directo", "Gran oportunidad", "Atención compradores".
-- Enfócate en las SENSACIONES, el placer de estrenar, el confort, el estatus y el gusto de tenerlo:
-  * Si es perfume/belleza: antoja el aroma ("aroma magnético", "te van a llover cumplidos", "elegancia pura todo el día").
-  * Si es audio/tecnología: antoja la experiencia ("graves profundos", "batería para todo el fin", "diseño comodísimo").
-  * Si es ropa/calzado/cuidado: antoja el estilo y el confort ("comodidad nivel nube", "porte impecable", "roba miradas").
-  * Si es hogar/herramientas: antoja la practicidad y descanso ("te resuelve la vida", "descanso de hotel 5 estrellas").
+REGLAS ESTRICTAS DE VENTA AGRESIVA (CERO RELLENO, CERO POESÍA):
+1. REDONDEO NATURAL DEL DESCUENTO: NUNCA digas porcentajes con pico como "${cleanDiscount} por ciento". Redondéalo siempre diciendo exactamente: "${spokenDiscount}" (ej: "¡Más del ${roundedDecade} por ciento de descuento en Mercado Libre!").
+2. MENCIONA QUE LA COMPRA ES EN MERCADO LIBRE: Da confianza inmediata dejando claro en la voz y subtítulos que la oferta y compra segura es en Mercado Libre.
+3. DIRECTO AL PRECIO Y DESCUENTO DESDE EL SEGUNDO CERO: Entra gritando "${spokenDiscount} en Mercado Libre", el precio de oferta ($${cleanPrice} pesos) y QUÉ ES el producto.
+4. QUÉ ES Y QUÉ HACE: Di con datos concretos qué es el producto, qué potencia/capacidad/material tiene y qué hace en la vida real.
+5. RITMO RÁPIDO Y CONTUNDENTE: Cada 'voice_text' debe tener entre 11 y 15 palabras máximo para que sea dinámico y golpeador.
+6. Los 3 'key_points' deben ser frases cortas en MAYÚSCULAS (máximo 4 palabras) que digan exactamente QUÉ ES Y QUÉ HACE (ej: "CARGA ULTRA RÁPIDA 66W", "HASTA 10 CARGAS CELULAR", "45,000MAH CAPACIDAD REAL").
 
-Debes estructurar el video en EXACTAMENTE 4 escenas sincronizadas.
-Para cada escena debes proveer OBLIGATORIAMENTE:
-- 'voice_text': Frase hablada que leerá la locutora en esa escena específica (10-15 palabras).
-- 'subtitle': Subtítulo corto y legible para la barra inferior (máximo 10 palabras).
-
-Las 4 escenas son:
-1. "title": Apertura con gancho que antoja y despierta curiosidad.
-   - 'text1': Gancho como "¡DATE EL GUSTO!", "ANTOJO TOTAL", "JOYITA TOP", "GUSTITO MERECIDO" (máx 16 letras).
-   - 'text2': Nombre corto o marca deseable del producto (máx 18 letras).
-   - 'voice_text': Gancho inicial que antoja y hace que la persona quiera consentirse (ej: "¿A poco no te mereces un buen gustito hoy? Checa la joya que acaba de caer en ofertón en Mercado Libre.").
-   - 'subtitle': Subtítulo de apertura irresistible (ej: "¡Date el gusto que te mereces! Ofertón imperdible.").
-2. "product": Beneficios sensoriales y antojadores.
+Estructura OBLIGATORIA de las 4 escenas:
+1. "title" (SEGUNDO 0: GOLPE DIRECTO DE DESCUENTO REDONDEADO + PRECIO + MERCADO LIBRE):
+   - 'text1': "${badgeDiscount}",
+   - 'text2': "$${cleanPrice} MXN",
+   - 'voice_text': Entra directo con "${spokenDiscount}" en Mercado Libre, producto y precio (ej: "¡Más del ${roundedDecade} por ciento de descuento en Mercado Libre! Llévate esta ${cleanTitle.substring(0, 32)} por solo ${cleanPrice} pesos.").
+   - 'subtitle': "🚨 ¡${visualDiscount} en Mercado Libre! Solo $${cleanPrice} MXN"
+2. "product" (QUÉ ES Y QUÉ HACE EXACTAMENTE):
    - 'product_title': "${cleanTitle}",
-   - 'key_points': Exactamente 3 beneficios antojadores con emoji inicial (ej: "✨ Aroma fresco y magnético", "👑 Cumplidos garantizados", "🚀 Llega mañana con FULL").
-   - 'voice_text': Frase antojando el producto, describiendo la sensación o experiencia placentera de usarlo (12-16 palabras).
-   - 'subtitle': Subtítulo destacando el beneficio más antojable.
-3. "price": Visual del precio y descuento como justificación perfecta del gusto.
+   - 'key_points': 3 puntos ultra concretos y agresivos de qué es y qué hace (sin relleno).
+   - 'voice_text': Explica directo qué es y qué hace con especificaciones reales (ej: "¿Qué es y qué hace? Es una batería portátil de 45 mil miliamperios y 66 watts que carga tu celular hasta 10 veces.").
+   - 'subtitle': "⚡ Qué es y qué hace: potencia real, máxima capacidad y listo para usar."
+3. "price" (GOLPE AL AHORRO EN MERCADO LIBRE):
    - 'discount_percentage': ${cleanDiscount},
    - 'original_price': "${cleanOriginalPrice || ''}",
    - 'offer_price': "${cleanPrice}",
-   - 'voice_text': Frase mencionando EXACTAMENTE los precios y el descuento, justificando el capricho (ej: "Baja de ${cleanOriginalPrice || cleanPrice} a solo ${cleanPrice} pesos con un ${cleanDiscount} por ciento de descuento. ¡Por este precio es un regalo de ti para ti!").
-   - 'subtitle': "De $${cleanOriginalPrice || ''} a solo $${cleanPrice} pesos. ¡${cleanDiscount}% de descuento!"
-4. "cta": Cierre con llamado a la acción y el lema de marca.
-   - 'headline': "¡PARA ESO TRABAJAS!",
-   - 'voice_text': Frase animando a comprarlo en el link de la bio antes de que se termine, terminando OBLIGATORIAMENTE con la frase: "¡Para eso trabajo!" (12-16 palabras).
-   - 'subtitle': "¡Para eso trabajo! Consiéntete en el link de la bio."
+   - 'voice_text': Remata el precio anterior vs hoy y cuánto se ahorra en Mercado Libre (ej: "Estaba en ${cleanOriginalPrice || cleanPrice} y hoy baja a ${cleanPrice} pesos en Mercado Libre. ¡Te ahorras ${savingsAmount || cleanDiscount} pesos de golpe!").
+   - 'subtitle': "${savingsAmount ? `💥 De $${cleanOriginalPrice} a $${cleanPrice} MXN en Mercado Libre (¡Ahorras $${savingsAmount}!)` : `💥 ¡Solo $${cleanPrice} MXN hoy en Mercado Libre! (${badgeDiscount})`}"
+4. "cta" (CIERRE AGRESIVO DE COMPRA EN MERCADO LIBRE):
+   - 'headline': "¡PARA ESO TRABAJO!",
+   - 'voice_text': Orden directa de comprar en Mercado Libre desde el link cerrando con el lema (ej: "Compra seguro en Mercado Libre tocando el link de la descripción o bio. ¡Para eso trabajo!").
+   - 'subtitle': "👇 Compra en Mercado Libre desde el link en descripción o bio. ¡Para eso trabajo!"
 
-Reglas:
-- "theme_color": elige un color neón vibrante (#00FF66, #FF0055, #00E5FF, #FFE600).
-- Cada escena DEBE tener 'voice_text' y 'subtitle'.
-- Los precios en el voice_text y en el subtitle DEBEN ser exactamente $${cleanPrice} y $${cleanOriginalPrice || cleanPrice}.
+Incluye también "sales_pitch": 2 oraciones directas y agresivas explicando qué es el producto, qué hace exactamente y por qué con ${spokenDiscount} a $${cleanPrice} MXN en Mercado Libre es una ganga brutal.
 
 Responde ÚNICAMENTE con JSON válido:
 {
-  "theme_color": "#00FF66",
+  "theme_color": "#FFE600",
   "product_title": "${cleanTitle}",
   "discount_percentage": ${cleanDiscount},
   "original_price": "${cleanOriginalPrice || ''}",
   "offer_price": "${cleanPrice}",
-  "key_points": ["✨ Aroma magnético y fresco", "👑 Cumplidos garantizados", "🚀 Llega mañana con FULL"],
+  "sales_pitch": "Explicación directa de qué es y qué hace...",
+  "key_points": ["PUNTO CONCRETO 1", "PUNTO CONCRETO 2", "PUNTO CONCRETO 3"],
   "scenes": [
-    { "type": "title", "text1": "¡DATE EL GUSTO!", "text2": "${cleanTitle.substring(0, 16)}", "voice_text": "¿A poco no te mereces un buen gustito hoy? Mira la joya que acaba de caer en oferta en Mercado Libre.", "subtitle": "¡Date el gusto que te mereces! Ofertón imperdible." },
-    { "type": "product", "product_title": "${cleanTitle}", "key_points": ["✨ Aroma magnético y fresco", "👑 Cumplidos garantizados", "🚀 Llega mañana con FULL"], "voice_text": "Huele a pura elegancia y sofisticación todo el día, de esos aromas que dejan huella donde camines.", "subtitle": "Aroma magnético, elegancia pura y presencia todo el día." },
-    { "type": "price", "discount_percentage": ${cleanDiscount}, "original_price": "${cleanOriginalPrice || ''}", "offer_price": "${cleanPrice}", "voice_text": "Baja de ${cleanOriginalPrice || cleanPrice} a solo ${cleanPrice} pesos con un ${cleanDiscount} por ciento de descuento. ¡Un regalazo de ti para ti!", "subtitle": "De $${cleanOriginalPrice || ''} a solo $${cleanPrice} pesos. ¡${cleanDiscount}% de descuento!" },
-    { "type": "cta", "headline": "¡PARA ESO TRABAJAS!", "voice_text": "No te quedes con las ganas y corre al enlace de nuestra biografía antes de que vuele. ¡Para eso trabajo!", "subtitle": "¡Para eso trabajo! Toca el enlace en nuestra bio." }
+    { "type": "title", "text1": "${badgeDiscount}", "text2": "$${cleanPrice} MXN", "voice_text": "...", "subtitle": "..." },
+    { "type": "product", "product_title": "${cleanTitle}", "key_points": ["PUNTO CONCRETO 1", "PUNTO CONCRETO 2", "PUNTO CONCRETO 3"], "voice_text": "...", "subtitle": "..." },
+    { "type": "price", "discount_percentage": ${cleanDiscount}, "original_price": "${cleanOriginalPrice || ''}", "offer_price": "${cleanPrice}", "voice_text": "...", "subtitle": "..." },
+    { "type": "cta", "headline": "¡PARA ESO TRABAJO!", "voice_text": "... ¡Para eso trabajo!", "subtitle": "👇 Compra en Mercado Libre desde el link en descripción o bio. ¡Para eso trabajo!" }
   ]
 }`;
 
@@ -312,12 +353,12 @@ Responde ÚNICAMENTE con JSON válido:
               model: modelName,
               response_format: { type: "json_object" },
               messages: [{ role: "user", content: prompt }],
-              temperature: 0.7
+              temperature: 0.6
             })
           });
           const resData = await response.json();
           if (response.ok) {
-            const parsed = JSON.parse(resData.choices[0].message.content.trim());
+            const parsed = normalizeDealScript(JSON.parse(resData.choices[0].message.content.trim()));
             console.log(`✅ Guion generado con Groq (${modelName})`);
             return parsed;
           } else {
@@ -335,7 +376,7 @@ Responde ÚNICAMENTE con JSON válido:
 
   if (genAI) {
     console.log("🧠 Usando Gemini para generar guion y metadatos...");
-    const geminiModels = ["gemini-3.8-flash", "gemini-3.1-pro-preview", "gemini-2.5-flash"];
+    const geminiModels = ["gemini-2.5-flash", "gemini-2.5-pro"];
     for (const modelName of geminiModels) {
       let attempts = 0;
       const maxRetries = 2;
@@ -347,7 +388,7 @@ Responde ÚNICAMENTE con JSON válido:
             generationConfig: { responseMimeType: "application/json" }
           });
           const result = await model.generateContent(prompt);
-          const parsed = JSON.parse(result.response.text());
+          const parsed = normalizeDealScript(JSON.parse(result.response.text()));
           console.log(`✅ Guion y metadatos generados exitosamente con Gemini (${modelName})`);
           return parsed;
         } catch (e) {
@@ -364,49 +405,50 @@ Responde ÚNICAMENTE con JSON válido:
     }
   }
 
-  console.warn("⚠️ Los modelos de IA fallaron. Activando guion de contingencia antojador basado en datos reales del producto.");
-  return {
-    theme_color: "#00FF66",
+  console.warn("⚠️ Los modelos de IA fallaron. Activando guion agresivo de contingencia.");
+  return normalizeDealScript({
+    theme_color: "#FFE600",
     product_title: cleanTitle,
     discount_percentage: cleanDiscount,
     original_price: cleanOriginalPrice || '',
     offer_price: cleanPrice,
-    key_points: ["✨ Estilo y presencia de lujo", "👑 Calidad premium garantizada", "🚀 Llega volando con FULL"],
+    sales_pitch: `${cleanTitle} con ${spokenDiscount} directo en Mercado Libre. Potencia, durabilidad y envío rápido FULL a precio de remate.`,
+    key_points: ["ALTO RENDIMIENTO REAL", "CALIDAD USO RUDO", "ENVÍO FULL MERCADO LIBRE"],
     scenes: [
       {
         type: "title",
-        text1: "¡DATE EL GUSTO!",
-        text2: cleanTitle.substring(0, 16).toUpperCase(),
-        voice_text: `¿A poco no te mereces un buen gustito hoy? Checa esta joyita que acaba de caer en ofertón en Mercado Libre.`,
-        subtitle: `¡Date el gusto que te mereces! Ofertón en Mercado Libre.`
+        text1: badgeDiscount,
+        text2: `$${cleanPrice} MXN`,
+        voice_text: `¡${spokenDiscount.charAt(0).toUpperCase() + spokenDiscount.slice(1)} en Mercado Libre! De ${cleanOriginalPrice || cleanPrice} a solo ${cleanPrice} pesos este ${cleanTitle.substring(0, 30)}.`,
+        subtitle: `🚨 ¡${visualDiscount} en Mercado Libre! Solo $${cleanPrice} MXN`
       },
       {
         type: "product",
         product_title: cleanTitle,
-        key_points: ["✨ Estilo y presencia de lujo", "👑 Calidad premium garantizada", "🚀 Llega volando con FULL"],
-        voice_text: "Diseño impecable y una experiencia increíble para que te consientas y disfrutes cada día.",
-        subtitle: "Lujo accesible, elegancia y satisfacción garantizada."
+        key_points: ["ALTO RENDIMIENTO REAL", "CALIDAD USO RUDO", "ENVÍO FULL MERCADO LIBRE"],
+        voice_text: "¿Qué es y qué hace? Está diseñado para darte máxima potencia, resistencia y resolver tu día desde el primer uso.",
+        subtitle: "⚡ Máxima potencia, uso práctico y envío inmediato en Mercado Libre."
       },
       {
         type: "price",
         discount_percentage: cleanDiscount,
         original_price: cleanOriginalPrice || '',
         offer_price: cleanPrice,
-        voice_text: `Baja a solo ${cleanPrice} pesos con un ${cleanDiscount} por ciento de descuento. ¡Un regalazo de ti para ti!`,
-        subtitle: cleanOriginalPrice ? `De $${cleanOriginalPrice} a solo $${cleanPrice} pesos. ¡${cleanDiscount}% OFF!` : `A solo $${cleanPrice} pesos. ¡${cleanDiscount}% OFF!`
+        voice_text: `${savingsAmount ? `Te ahorras ${savingsAmount} pesos hoy mismo en Mercado Libre.` : `Tiene ${spokenDiscount} en Mercado Libre.`} A solo ${cleanPrice} pesos se agota volando.`,
+        subtitle: savingsAmount ? `💥 ¡Te ahorras $${savingsAmount} pesos en Mercado Libre! Solo $${cleanPrice} MXN` : `💥 ¡Solo $${cleanPrice} MXN hoy en Mercado Libre! (${badgeDiscount})`
       },
       {
         type: "cta",
-        headline: "¡PARA ESO TRABAJAS!",
-        voice_text: "No te quedes con las ganas. Corre al link de nuestra biografía antes de que vuele. ¡Para eso trabajo!",
-        subtitle: "¡Para eso trabajo! Consiéntete en el link de la bio."
+        headline: "¡PARA ESO TRABAJO!",
+        voice_text: "Compra seguro en Mercado Libre tocando el link en la descripción o bio. ¡Para eso trabajo!",
+        subtitle: "👇 Compra en Mercado Libre desde el link en descripción o bio. ¡Para eso trabajo!"
       }
     ]
-  };
+  });
 }
 
 // ─────────────────────────────────────────
-// 4. GENERAR VOZ EN OFF SINCRONIZADA POR ESCENAS
+// 4. GENERAR VOZ EN OFF SINCRONIZADA POR ESCENAS (ElevenLabs v4 Femenina con energía comercial)
 // ─────────────────────────────────────────
 function sanitizeTtsText(text) {
   return text
@@ -425,35 +467,43 @@ async function synthesizeSnippet(text, outputPath) {
   const clean = sanitizeTtsText(text);
 
   if (ELEVENLABS_API_KEY) {
-    try {
-      const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
-        {
-          method: 'POST',
-          headers: {
-            'xi-api-key': ELEVENLABS_API_KEY,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: clean,
-            model_id: 'eleven_multilingual_v2',
-            voice_settings: {
-              stability: 0.65,
-              similarity_boost: 0.85,
-              style: 0.0,
-              use_speaker_boost: true,
+    const modelsToTry = [ELEVENLABS_MODEL_ID, 'eleven_v4_turbo', 'eleven_multilingual_v2'];
+    for (const modelId of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
+          {
+            method: 'POST',
+            headers: {
+              'xi-api-key': ELEVENLABS_API_KEY,
+              'Content-Type': 'application/json',
             },
-          }),
-        }
-      );
+            body: JSON.stringify({
+              text: clean,
+              model_id: modelId,
+              voice_settings: {
+                stability: 0.42,
+                similarity_boost: 0.88,
+                style: 0.45,
+                speed: 1.12,
+                use_speaker_boost: true,
+              },
+            }),
+          }
+        );
 
-      if (response.ok) {
-        const audioBuffer = await response.arrayBuffer();
-        fs.writeFileSync(outputPath, Buffer.from(audioBuffer));
-        return;
+        if (response.ok) {
+          const audioBuffer = await response.arrayBuffer();
+          fs.writeFileSync(outputPath, Buffer.from(audioBuffer));
+          console.log(`    🎙️ [ElevenLabs ${modelId}] Voz femenina sintetizada OK (${ELEVENLABS_VOICE_ID})`);
+          return;
+        } else {
+          const errText = await response.text();
+          console.warn(`    ⚠️ ElevenLabs (${modelId}) HTTP ${response.status}: ${errText.substring(0, 140)}`);
+        }
+      } catch (e) {
+        console.warn(`    ⚠️ ElevenLabs (${modelId}) error: ${e.message}`);
       }
-    } catch (e) {
-      console.warn(`ElevenLabs error en snippet: ${e.message}`);
     }
   }
 
@@ -494,10 +544,10 @@ async function generateVoice(scenes) {
     };
     timelineScenes.push(timing);
     console.log(`  ✓ Escena ${idx + 1}: [${timing.start}s -> ${timing.end}s] (${dur.toFixed(2)}s) - "${sc.subtitle || textToSpeak.substring(0, 40)}"`);
-    currentTime += dur + 0.15; // 150ms pausa natural entre escenas
+    currentTime += dur;
   }
 
-  const targetDur = Math.ceil(currentTime + 1.2);
+  const targetDur = Math.ceil(currentTime + 0.8);
   const totalFrames = targetDur * FPS;
 
   // Concatenar snippets en voice.mp3
@@ -631,13 +681,19 @@ async function main() {
     metadata.original_price = cleanOriginalPrice;
     metadata.discount_percentage = cleanDiscount;
 
-    // Asegurar coherencia en la escena de precio
-    if (metadata.scenes && metadata.scenes[2]) {
-      metadata.scenes[2].offer_price = cleanPrice;
-      metadata.scenes[2].original_price = cleanOriginalPrice || '';
-      metadata.scenes[2].discount_percentage = cleanDiscount;
-      if (cleanOriginalPrice) {
-        metadata.scenes[2].subtitle = `De $${cleanOriginalPrice} a solo $${cleanPrice} pesos. ¡${cleanDiscount}% de descuento!`;
+    // Asegurar coherencia en la escena de precio (la que tenga type === 'price')
+    if (metadata.scenes) {
+      const priceScene = metadata.scenes.find(s => s.type === 'price') || metadata.scenes[2];
+      if (priceScene) {
+        priceScene.offer_price = cleanPrice;
+        priceScene.original_price = cleanOriginalPrice || '';
+        priceScene.discount_percentage = cleanDiscount;
+        const roundedDec = cleanDiscount >= 15 ? Math.floor(cleanDiscount / 10) * 10 : cleanDiscount;
+        const isPlus = cleanDiscount >= 15 && (cleanDiscount % 10 !== 0);
+        const subDiscText = isPlus ? `¡Más del ${roundedDec}% de descuento!` : `¡${cleanDiscount}% de descuento!`;
+        if (cleanOriginalPrice) {
+          priceScene.subtitle = `💥 De $${cleanOriginalPrice} a solo $${cleanPrice} MXN en Mercado Libre (${subDiscText})`;
+        }
       }
     }
 

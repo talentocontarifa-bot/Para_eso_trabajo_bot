@@ -19,9 +19,20 @@ const { publishVideoToTikTok } = require('../tiktok_publisher');
 const { publishVideoToYouTube } = require('../youtube_publisher');
 
 const PAGE_ID = process.env.META_PAGE_ID || process.env.PAGE_ID;
-const ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
+const ACCESS_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.META_PAGE_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
 const VIDEO_PATH = path.join(__dirname, 'out', 'video_final_pet.mp4');
 const DEAL_DATA_PATH = path.join(__dirname, 'src', 'deal_data.json');
+
+async function resolveFacebookPageToken() {
+  if (!PAGE_ID || !ACCESS_TOKEN) return ACCESS_TOKEN;
+  try {
+    const r = await axios.get(`https://graph.facebook.com/v21.0/${PAGE_ID}?fields=access_token&access_token=${ACCESS_TOKEN}`, { validateStatus: () => true });
+    if (r.data && r.data.access_token) {
+      return r.data.access_token;
+    }
+  } catch (e) {}
+  return ACCESS_TOKEN;
+}
 
 if (!fs.existsSync(VIDEO_PATH)) {
   console.error('❌ No se encontró el video en:', VIDEO_PATH);
@@ -58,29 +69,116 @@ function buildCaption() {
   try {
     const data = JSON.parse(fs.readFileSync(DEAL_DATA_PATH, 'utf-8'));
     const affiliateLink = data.affiliate_link || getRecentProductLink();
+    const productTitle = data.product_title || 'Oferta Imperdible en Mercado Libre';
+    const shortTitle = productTitle.substring(0, 60);
+    const offerNum = parseFloat(String(data.offer_price || '').replace(/[$,\s]/g, ''));
+    const origNum = parseFloat(String(data.original_price || '').replace(/[$,\s]/g, ''));
+    const savingsNum = (origNum > offerNum) ? Math.round(origNum - offerNum) : 0;
 
-    const keyPoints = data.key_points
-      ? data.key_points.map(p => `✅ ${p}`).join('\n')
+    const offerPrice = data.offer_price ? `$${data.offer_price}` : '';
+    const originalPrice = data.original_price ? `$${data.original_price}` : '';
+    const discNum = parseInt(data.discount_percentage || '0', 10);
+    const roundedDecade = discNum >= 15 ? Math.floor(discNum / 10) * 10 : discNum;
+    const isRoundedPlus = discNum >= 15 && (discNum % 10 !== 0);
+    const discountLabel = discNum > 0
+      ? (isRoundedPlus ? `MÁS DEL ${roundedDecade}% DE DESCUENTO` : `${discNum}% DE DESCUENTO`)
+      : '';
+    const shortDiscountLabel = discNum > 0
+      ? (isRoundedPlus ? `+${roundedDecade}% OFF` : `-${discNum}% OFF`)
       : '';
 
-    const caption =
-      `${data.script || '🔥 ¡Ofertón imperdible hoy!'}\n\n` +
-      `🛍️ Consigue el tuyo aquí: ${affiliateLink}\n\n` +
-      (keyPoints ? `Destacados:\n${keyPoints}\n\n` : '') +
-      `─────────────────────────\n` +
-      `🤖 Video creado y publicado 100% de manera automática por Inteligencia Artificial.\n\n` +
-      `#ParaEsoTrabajo #Ofertas #Descuentos #ComprasOnline #MercadoLibre #Reels #Shorts`;
+    // LÍNEA 1: GOLPE DE DESCUENTO REDONDEADO + MERCADO LIBRE + QUÉ ES
+    const headlineLine = discountLabel
+      ? `🚨 ¡${discountLabel} EN MERCADO LIBRE! ${productTitle}`
+      : `🚨 ¡OFERTA EN MERCADO LIBRE! ${productTitle}`;
+
+    // LÍNEA 2: PRECIO DIRECTO + ANTES + AHORRO EN PESOS
+    let priceHeader = '';
+    if (offerPrice && originalPrice && savingsNum > 0) {
+      priceHeader = `💥 HOY EN MERCADO LIBRE: ${offerPrice} MXN (Antes ${originalPrice} — ¡Te ahorras $${savingsNum}!)`;
+    } else if (offerPrice && discountLabel) {
+      priceHeader = `💥 HOY EN MERCADO LIBRE: ${offerPrice} MXN (¡${discountLabel}!)`;
+    } else if (offerPrice) {
+      priceHeader = `💥 HOY EN MERCADO LIBRE: ${offerPrice} MXN`;
+    } else {
+      priceHeader = `💥 ¡PRECIO DE REMATE HOY EN MERCADO LIBRE!`;
+    }
+
+    // QUÉ ES Y QUÉ HACE (Directo, sin rollo)
+    const productScene = (data.scenes || []).find(s => s.type === 'product');
+    const whatItDoes =
+      data.sales_pitch ||
+      productScene?.voice_text ||
+      'Potencia, calidad y envío rápido FULL directo en Mercado Libre.';
+
+    const keyPoints = data.key_points
+      ? data.key_points.map(p => `✅ ${p.replace(/^[\p{Extended_Pictographic}\uFE0F\s]+/u, '')}`).join('\n')
+      : '';
+
+    const hashtags = `#ParaEsoTrabajo #Ofertas #Descuentos #MercadoLibre #ComprasOnline #Reels #Shorts`;
+
+    // 1. FACEBOOK: Golpe arriba + Link en Línea 3 + Qué es y qué hace + Link abajo
+    const facebookCaption =
+      `${headlineLine}\n` +
+      `${priceHeader}\n` +
+      `👉 Cómpralo aquí en Mercado Libre: ${affiliateLink}\n\n` +
+      `⚡ ¿Qué es y qué hace?\n${whatItDoes}\n\n` +
+      (keyPoints ? `${keyPoints}\n\n` : '') +
+      `🔥 A este precio vuela. ¡Date el gusto, que para eso trabajas!\n` +
+      `🛒 Link directo a Mercado Libre:\n${affiliateLink}\n\n` +
+      hashtags;
+
+    // 2. YOUTUBE SHORTS: Descuento + Precio + Producto en título, Link en Línea 1
+    const youtubeTitle = offerPrice && shortDiscountLabel
+      ? `🚨 ¡${shortDiscountLabel} en Mercado Libre! ${shortTitle} a ${offerPrice} #Shorts`
+      : `🚨 ${shortTitle} en OFERTA en Mercado Libre #Shorts`;
+
+    const youtubeDescription =
+      `👉 Cómpralo aquí en Mercado Libre: ${affiliateLink}\n\n` +
+      `${headlineLine}\n` +
+      `${priceHeader}\n\n` +
+      `⚡ ¿Qué es y qué hace?\n${whatItDoes}\n\n` +
+      (keyPoints ? `${keyPoints}\n\n` : '') +
+      `🛒 Enlace directo: ${affiliateLink}\n\n` +
+      hashtags;
+
+    // 3. INSTAGRAM REELS: Golpe arriba + Link en Bio / URL corta + Qué hace
+    const instagramCaption =
+      `${headlineLine}\n` +
+      `${priceHeader}\n` +
+      `🔗 Link directo en nuestra BIO o entra a: ${affiliateLink}\n\n` +
+      `⚡ ¿Qué es y qué hace?\n${whatItDoes}\n\n` +
+      (keyPoints ? `${keyPoints}\n\n` : '') +
+      `🔥 A este precio se agota volando. ¡Para eso trabajas!\n\n` +
+      hashtags;
+
+    // 4. TIKTOK: Directo al descuento, precio y qué hace
+    const tiktokCaption =
+      `${headlineLine} | ${priceHeader} ⚡ ${whatItDoes} 👉 Link directo en perfil: ${affiliateLink} #ParaEsoTrabajo #Ofertas #Descuentos #MercadoLibre`;
 
     return {
-      caption,
-      title: data.product_title || '🔥 Oferta del Día — Para Eso Trabajo',
-      shortTitle: (data.product_title || 'Oferta del Día').substring(0, 80)
+      caption: facebookCaption,
+      facebookCaption,
+      instagramCaption,
+      youtubeDescription,
+      youtubeTitle,
+      tiktokCaption,
+      affiliateLink,
+      title: `${headlineLine} — ${offerPrice}`,
+      shortTitle
     };
   } catch (e) {
     console.warn('⚠️ No se pudo leer deal_data.json, usando caption genérico.');
     const affiliateLink = getRecentProductLink();
+    const fallback = `🔥 ¡Ofertón imperdible en Mercado Libre!\n👉 Cómpralo aquí: ${affiliateLink}\n\n¡Date el gusto, que para eso trabajas!\n\n#ParaEsoTrabajo #Ofertas #Descuentos #Reels #Shorts`;
     return {
-      caption: `🔥 ¡Ofertón imperdible hoy!\n\n🛍️ Cómpralo aquí: ${affiliateLink}\n\n¡Para eso trabajo!\n\n#ParaEsoTrabajo #Ofertas #Descuentos #Reels #Shorts`,
+      caption: fallback,
+      facebookCaption: fallback,
+      instagramCaption: fallback,
+      youtubeDescription: fallback,
+      youtubeTitle: '🔥 Oferta del Día | Para Eso Trabajo #Shorts',
+      tiktokCaption: fallback,
+      affiliateLink,
       title: '🔥 Oferta del Día — Para Eso Trabajo',
       shortTitle: 'Oferta del Día'
     };
@@ -89,13 +187,29 @@ function buildCaption() {
 
 async function publishAll() {
   const content = buildCaption();
-  const videoSizeKB = Math.round(fs.statSync(VIDEO_PATH).size / 1024);
+  const isDryRun = process.argv.includes('--dry-run');
+  const videoSizeKB = fs.existsSync(VIDEO_PATH) ? Math.round(fs.statSync(VIDEO_PATH).size / 1024) : 0;
 
   console.log('====================================================');
   console.log('🚀 ORQUESTADOR MULTI-PLATAFORMA — PARA ESO TRABAJO');
   console.log(`📁 Video: ${VIDEO_PATH} (${videoSizeKB} KB)`);
-  console.log(`📌 Título: "${content.shortTitle}"`);
+  console.log(`📌 Título: "${content.title}"`);
   console.log('====================================================');
+
+  if (isDryRun) {
+    console.log('\n🧪 [MODO DEMO / DRY-RUN] Previsualización de Copys por Red Social:\n');
+    console.log('--- 📘 FACEBOOK (Post + Video Description) ---');
+    console.log(content.facebookCaption);
+    console.log(`\n💬 [Facebook Auto-Comentario #1]:\n🛍️ Enlace directo a la oferta en Mercado Libre:\n${content.affiliateLink}\n`);
+    console.log('--- 📸 INSTAGRAM REELS ---');
+    console.log(content.instagramCaption);
+    console.log('\n--- ▶️ YOUTUBE SHORTS ---');
+    console.log(`Título: ${content.youtubeTitle}`);
+    console.log(content.youtubeDescription);
+    console.log('\n--- 🎵 TIKTOK ---');
+    console.log(content.tiktokCaption);
+    return;
+  }
 
   const results = {
     tiktok: null,
@@ -107,9 +221,8 @@ async function publishAll() {
   // 1. PUBLICAR EN TIKTOK
   try {
     console.log('\n--- 1/4: TIKTOK ---');
-    const tiktokTitle = `${content.title.substring(0, 150)} #ParaEsoTrabajo #Ofertas #Descuentos`;
     results.tiktok = await publishVideoToTikTok(VIDEO_PATH, {
-      title: tiktokTitle
+      title: content.tiktokCaption.substring(0, 2000)
     });
   } catch (err) {
     console.error('❌ Error en TikTok:', err.message);
@@ -120,7 +233,7 @@ async function publishAll() {
   try {
     console.log('\n--- 2/4: INSTAGRAM REELS ---');
     results.instagram = await publishReelToInstagram(VIDEO_PATH, {
-      caption: content.caption,
+      caption: content.instagramCaption,
       share_to_feed: true
     });
   } catch (err) {
@@ -133,8 +246,8 @@ async function publishAll() {
   try {
     console.log('\n--- 3/4: YOUTUBE SHORTS ---');
     results.youtube = await publishVideoToYouTube(VIDEO_PATH, {
-      title: `${content.shortTitle} | Para Eso Trabajo`,
-      description: content.caption,
+      title: content.youtubeTitle,
+      description: content.youtubeDescription,
       tags: ['ParaEsoTrabajo', 'Ofertas', 'Descuentos', 'MercadoLibre', 'Shorts']
     });
   } catch (err) {
@@ -142,13 +255,14 @@ async function publishAll() {
     results.youtube = { success: false, error: err.message };
   }
 
-  // 4. PUBLICAR EN FACEBOOK PAGE
+  // 4. PUBLICAR EN FACEBOOK PAGE + PRIMER COMENTARIO CON LINK CLICKEABLE
   if (PAGE_ID && ACCESS_TOKEN) {
     try {
       console.log('\n--- 4/4: FACEBOOK PAGE ---');
+      const fbPageToken = await resolveFacebookPageToken();
       const form = new FormData();
-      form.append('access_token', ACCESS_TOKEN);
-      form.append('description', content.caption);
+      form.append('access_token', fbPageToken);
+      form.append('description', content.facebookCaption);
       form.append('title', content.title);
       form.append('file', fs.createReadStream(VIDEO_PATH), {
         filename: 'video_pet.mp4',
@@ -165,8 +279,21 @@ async function publishAll() {
         console.error('❌ [Facebook] Error:', response.data.error.message);
         results.facebook = { success: false, error: response.data.error.message };
       } else {
-        console.log(`✅ [Facebook] Video publicado exitosamente! ID: ${response.data.id}`);
-        results.facebook = { success: true, id: response.data.id };
+        const fbVideoId = response.data.id;
+        console.log(`✅ [Facebook] Video publicado exitosamente! ID: ${fbVideoId}`);
+        results.facebook = { success: true, id: fbVideoId };
+
+        // Publicar automáticamente el primer comentario con el link directo clickeable
+        try {
+          const commentUrl = `https://graph.facebook.com/v21.0/${fbVideoId}/comments`;
+          await axios.post(commentUrl, {
+            message: `🛍️ Enlace directo a la oferta en Mercado Libre:\n${content.affiliateLink}`,
+            access_token: fbPageToken
+          });
+          console.log(`💬 [Facebook] Primer comentario con link clickeable agregado con éxito.`);
+        } catch (commErr) {
+          console.warn(`⚠️ [Facebook] No se pudo agregar el primer comentario:`, commErr.response?.data?.error?.message || commErr.message);
+        }
       }
     } catch (err) {
       console.error('❌ [Facebook] Error:', err.message);

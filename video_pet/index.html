@@ -4,37 +4,89 @@
 @font-face{font-family:PET;src:url('assets/arial.ttf');font-weight:400}@font-face{font-family:PET;src:url('assets/arialbd.ttf');font-weight:700 900}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#faf9f3;font-family:PET,sans-serif;color:#20211d}#root{width:100%;height:100%;position:relative;overflow:hidden}.scene{position:absolute;inset:0;background:#faf9f3}.yellow{background:#fff44c}.brand{position:absolute;top:130px;left:90px;right:120px;display:flex;justify-content:space-between;align-items:center;font-size:36px;font-weight:700;line-height:.96;z-index:10}.brand span{display:block}.mark{font-size:29px;background:#20211d;color:#fff44c;padding:14px}.tag{position:absolute;top:310px;left:90px;font-size:28px;font-weight:700;letter-spacing:3px}h1,h2,p{margin:0}.headline{position:absolute;top:380px;left:85px;font-size:148px;line-height:.92;letter-spacing:-10px;font-weight:700}.headline span{display:block}.photo{position:absolute;object-fit:contain;mix-blend-mode:multiply}.footer{position:absolute;left:90px;right:120px;top:1580px;border-top:2px solid #a1a190;padding-top:30px;font-size:30px;font-weight:700}.photo1{left:160px;top:700px;width:740px;height:830px}.model{position:absolute;top:1450px;left:90px;font-size:32px;font-weight:700}.tease{position:absolute;top:1100px;left:90px;background:#20211d;color:#fff44c;font-size:36px;padding:20px;font-weight:700}.benefit-title{position:absolute;left:90px;top:390px;font-size:112px;line-height:.94;letter-spacing:-7px;width:840px}.battery{position:absolute;left:90px;top:390px;font-size:230px;letter-spacing:-16px;line-height:1;font-weight:700}.battery-copy{position:absolute;top:650px;left:100px;font-size:35px}.photo2{width:700px;height:820px;top:740px;left:330px}.detail{position:absolute;left:90px;top:990px;width:270px;font-size:44px;line-height:1.12;font-weight:700}.detail span{display:block}.old{position:absolute;top:445px;left:90px;font-size:68px;color:#69695b;text-decoration:line-through}.amount{position:absolute;top:550px;left:80px;font-size:215px;font-weight:700;letter-spacing:-17px}.discount{position:absolute;top:820px;left:90px;background:#20211d;color:#fff44c;padding:25px 35px;font-size:43px;font-weight:700}.photo3{width:510px;height:590px;top:990px;left:465px}.price-model{position:absolute;top:1150px;left:90px;width:340px;font-size:38px;line-height:1.25}.photo4{width:600px;height:700px;top:690px;left:240px}.button{position:absolute;top:1430px;left:90px;right:120px;background:#20211d;color:#fff44c;padding:36px;font-size:38px;font-weight:700;display:flex;justify-content:space-between}.captions{position:absolute;left:90px;right:120px;top:1720px;text-align:center;z-index:15}.caption{position:absolute;left:0;right:0;font-size:32px;line-height:1.25;font-weight:700;opacity:0}.line{position:absolute;bottom:0;left:0;width:100%;height:10px;background:#20211d;transform-origin:left;z-index:20}
 
-.scene{background:#faf9f3}.yellow{background:#fff44c}body{color:#20211d}.mark,.button,.discount{background:#20211d;color:#fff44c}.headline{width:870px;font-size:138px;line-height:.97;letter-spacing:-7px}.product-stage{position:absolute;background:#fff;border-radius:36px;padding:35px;overflow:hidden}.product{width:100%;height:100%;object-fit:contain}.opening{left:90px;top:740px;width:870px;height:620px}.product-title{position:absolute;left:90px;top:1390px;width:870px;line-height:1.2;font-weight:700;height:180px;padding-top:5px}.benefits{left:90px;top:410px;width:870px;height:640px}.benefits-list{position:absolute;left:90px;right:120px;top:1100px;display:flex;flex-direction:column;gap:25px}.benefits-list p{display:flex;gap:24px;line-height:1.12;font-weight:700}.benefit-index{font-size:25px;min-width:45px;padding-top:10px}.price-product{left:270px;top:980px;width:600px;height:550px}.closing{left:170px;top:710px;width:700px;height:660px}.amount{letter-spacing:-12px}.caption{max-height:140px;overflow:hidden}
+.scene{background:#faf9f3}
+.yellow{background:#fff44c}
+body{color:#20211d}
+.brand{top:42px!important;left:50px!important;right:50px!important;font-size:32px!important}
+.meli-header-pill{background:#FFE600;border:3px solid #141512;padding:10px 22px;border-radius:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(0,0,0,0.12)}
+.meli-logo-full{height:52px;width:auto;display:block}
+.meli-icon{height:42px;width:auto;display:block;flex-shrink:0}
+.product-stage{position:absolute;background:#ffffff;border-radius:36px;padding:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.14);border:4px solid #141512;display:flex;align-items:center;justify-content:center}
+.product{width:100%;height:100%;object-fit:contain;transform:scale(1.04)}
+.product-zoom{transform:scale(1.14)}
+
+/* ESCENA 1: PRECIO + DESCUENTO ARRIBA Y FOTO GIGANTE */
+.s1-top-strip{position:absolute;top:145px;left:50px;right:50px;height:210px;background:#141512;border-radius:28px;display:flex;align-items:center;justify-content:space-between;padding:0 36px;color:#ffffff;box-shadow:0 16px 40px rgba(0,0,0,0.18)}
+.s1-discount-pill{background:#ff2a00;color:#ffffff;font-size:64px;font-weight:900;padding:22px 32px;border-radius:20px;letter-spacing:-2px;line-height:1;text-transform:uppercase;box-shadow:0 8px 24px rgba(255,42,0,0.45)}
+.s1-price-box{display:flex;flex-direction:column;align-items:flex-end;justify-content:center}
+.s1-old{font-size:34px;font-weight:700;color:#a8a89e;text-decoration:line-through;letter-spacing:0}
+.s1-offer{font-weight:900;color:#fff44c;line-height:0.92;letter-spacing:-6px}
+.stage-s1{left:50px;top:380px;width:980px;height:960px}
+.stage-floating-tag{position:absolute;bottom:20px;right:20px;background:#141512;color:#FFE600;font-size:25px;font-weight:900;padding:12px 22px;border-radius:16px;letter-spacing:1px;display:flex;align-items:center;gap:14px;border:2px solid #FFE600;box-shadow:0 10px 24px rgba(0,0,0,0.25)}
+.s1-title-card{position:absolute;left:50px;right:50px;top:1365px;height:215px;background:#fff44c;border:4px solid #141512;border-radius:26px;padding:22px 32px;display:flex;align-items:center}
+.s1-title-text{font-weight:900;line-height:1.12;color:#141512;letter-spacing:-1.5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ESCENA 2: QUÉ ES Y QUÉ HACE + FOTO GRANDE */
+.s2-top-bar{position:absolute;top:145px;left:50px;right:50px;display:flex;justify-content:space-between;align-items:center;background:#141512;color:#fff;padding:20px 32px;border-radius:22px}
+.s2-badge{font-size:38px;font-weight:900;color:#fff44c;letter-spacing:1px}
+.s2-mini-price{font-size:42px;font-weight:900;background:#ff2a00;color:#fff;padding:8px 22px;border-radius:14px}
+.stage-s2{left:50px;top:275px;width:980px;height:800px}
+.benefits-list{position:absolute;left:50px;right:50px;top:1100px;display:flex;flex-direction:column;gap:18px}
+.benefit-card{background:#141512;color:#ffffff;border-radius:22px;padding:24px 30px;display:flex;align-items:center;gap:24px;box-shadow:0 10px 28px rgba(0,0,0,0.14)}
+.benefit-index{background:#fff44c;color:#141512;font-size:32px;font-weight:900;min-width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.benefit-text{font-weight:800;line-height:1.1;letter-spacing:-0.8px}
+
+/* ESCENA 3: GOLPE DE PRECIO Y AHORRO + FOTO GRANDE */
+.s3-price-hero{position:absolute;top:145px;left:50px;right:50px;background:#141512;color:#fff;border-radius:32px;padding:32px 40px;display:flex;flex-direction:column;align-items:center;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,0.2)}
+.s3-price-row{display:flex;align-items:center;justify-content:center;gap:28px;width:100%;margin-bottom:8px}
+.old{position:static!important;font-size:50px!important;font-weight:800;color:#a8a89e!important;text-decoration:line-through}
+.discount{position:static!important;background:#ff2a00!important;color:#ffffff!important;padding:14px 28px!important;font-size:44px!important;font-weight:900;border-radius:18px}
+.amount{position:static!important;font-weight:900;color:#fff44c;line-height:0.92;letter-spacing:-10px!important;margin:6px 0 14px 0}
+.s3-savings-banner{background:#fff44c;color:#141512;font-size:35px;font-weight:900;padding:14px 28px;border-radius:16px;width:100%;letter-spacing:-0.5px}
+.stage-s3{left:50px;top:730px;width:980px;height:860px}
+
+/* ESCENA 4: CIERRE AGRESIVO + FOTO GRANDE + BOTÓN MASIVO */
+.s4-header{position:absolute;top:145px;left:50px;right:50px;text-align:center}
+.s4-kicker{display:inline-block;background:#ff2a00;color:#fff;font-size:36px;font-weight:900;padding:12px 28px;border-radius:16px;margin-bottom:14px}
+.s4-headline{font-size:112px;font-weight:900;line-height:0.95;letter-spacing:-5px;color:#141512}
+.stage-s4{left:50px;top:430px;width:980px;height:920px}
+.button{position:absolute;top:1380px!important;left:50px!important;right:50px!important;background:#141512!important;color:#FFE600!important;padding:34px 36px!important;font-size:36px!important;font-weight:900;border-radius:26px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 18px 45px rgba(0,0,0,0.25);border:3px solid #141512}
+.button-left{display:flex;align-items:center;gap:18px}
+.button-arrow{background:#ff2a00;color:#fff;width:68px;height:68px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:44px;flex-shrink:0}
+
+/* SUBTÍTULOS */
+.captions{position:absolute;left:50px!important;right:50px!important;top:1625px!important;height:190px;display:flex;align-items:center;justify-content:center;z-index:25}
+.caption{position:absolute;left:0;right:0;background:rgba(20,21,18,0.92);color:#ffffff;padding:20px 28px;border-radius:20px;font-weight:800;line-height:1.22;border:2px solid #fff44c;max-height:175px;overflow:hidden}
 </style></head><body>
-<div id="root" data-composition-id="main" data-start="0" data-duration="31" data-width="1080" data-height="1920">
-<section id="s1" class="scene clip " data-start="0" data-duration="8.496" data-track-index="0"><div class="tag">ANTOJO DEL DÍA</div><h1 id="hook" class="headline">Date el gusto.</h1><div class="product-stage opening" id="p1"><img class="product" src="public/product.png" alt="Sony WH-1000XM5 Noise Cancelling"></div><p class="product-title" style="font-size:60px">Sony WH-1000XM5 Noise Cancelling</p><div class="footer">En Mercado Libre</div></section>
-<section id="s2" class="scene clip yellow" data-start="8.496" data-duration="6.288" data-track-index="0"><div class="tag">DALE LUGAR A ESE GUSTO</div><div class="product-stage benefits" id="p2"><img class="product" src="public/product.png" alt="Sony WH-1000XM5 Noise Cancelling"></div><div class="benefits-list"><p id="benefit0" style="font-size:44px"><span class="benefit-index">01</span>Cancelación de Ruido Líder</p><p id="benefit1" style="font-size:44px"><span class="benefit-index">02</span>30 Horas de Batería y Carga Rápida</p><p id="benefit2" style="font-size:44px"><span class="benefit-index">03</span>Sonido Hi-Res con DSEE Extreme</p></div><div class="footer">Para eso trabajo.</div></section>
-<section id="s3" class="scene clip " data-start="14.784" data-duration="8.04" data-track-index="0"><div class="tag">EL GUSTO. A ESTE PRECIO.</div><div id="old" class="old">$8,999</div><div id="amount" class="amount" style="font-size:205px">$5,399</div><div id="discount" class="discount">−40% DE DESCUENTO</div><div class="product-stage price-product" id="p3"><img class="product" src="public/product.png" alt="Sony WH-1000XM5 Noise Cancelling"></div><div class="footer">En Mercado Libre · MXN</div></section>
-<section id="s4" class="scene clip yellow" data-start="22.823999999999998" data-duration="8.176000000000002" data-track-index="0"><div class="tag">TE LO GANASTE.</div><h2 class="headline"><span id="cta1">Para eso</span><span id="cta2">trabajo.</span></h2><div class="product-stage closing" id="p4"><img class="product" src="public/product.png" alt="Sony WH-1000XM5 Noise Cancelling"></div><div id="button" class="button"><span>VER OFERTA EN LA BIO</span><span>↗</span></div><div class="footer">Date el gusto.</div></section>
-<div class="brand"><div><span>para eso</span><span>trabajo.</span></div><div class="mark">PET</div></div>
-<div class="captions"><p id="c0" class="caption" style="font-size:32px">¡Super oferta en Mercado Libre! Sony WH-1000XM5.</p><p id="c1" class="caption" style="font-size:32px">Cancelación de ruido líder, 30h de batería y envío FULL.</p><p id="c2" class="caption" style="font-size:32px">De $8,999 a solo $5,399 pesos. ¡40% de descuento!</p><p id="c3" class="caption" style="font-size:32px">¡Para eso trabajo! Toca el enlace en nuestra bio.</p></div>
+<div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1080" data-height="1920">
+<section id="s1" class="scene clip " data-start="0" data-duration="7.889" data-track-index="0"><div class="s1-top-strip"><div class="s1-discount-pill">+70% OFF</div><div class="s1-price-box"><span class="s1-old">ANTES $994</span><span id="hook" class="s1-offer" style="font-size:148px">$280</span></div></div><div class="product-stage stage-s1" id="p1"><img class="product" src="public/product.png" alt="Power Bank 45000mah Batería Portátil Pila 66w Carga Rápida"><div class="stage-floating-tag"><img class="meli-icon" src="public/meli_handshake.png" alt="ML"><span>COMPRA SEGURA EN MERCADO LIBRE</span></div></div><div class="s1-title-card"><p class="s1-title-text" style="font-size:52px">Power Bank 45000mah Batería Portátil Pila 66w Carga Rápida</p></div></section>
+<section id="s2" class="scene clip yellow" data-start="7.889" data-duration="8.516" data-track-index="0"><div class="s2-top-bar"><span class="s2-badge">¿QUÉ ES Y QUÉ HACE?</span><span class="s2-mini-price">$280 · +70% OFF</span></div><div class="product-stage stage-s2" id="p2"><img class="product product-zoom" src="public/product_2.png" alt="Power Bank 45000mah Batería Portátil Pila 66w Carga Rápida"><div class="stage-floating-tag"><img class="meli-icon" src="public/meli_handshake.png" alt="ML"><span>DISPONIBLE EN MERCADO LIBRE</span></div></div><div class="benefits-list"><div id="benefit0" class="benefit-card"><span class="benefit-index">01</span><span class="benefit-text" style="font-size:44px">CARGA ULTRA RÁPIDA 66W</span></div><div id="benefit1" class="benefit-card"><span class="benefit-index">02</span><span class="benefit-text" style="font-size:44px">HASTA 10 CARGAS CELULAR</span></div><div id="benefit2" class="benefit-card"><span class="benefit-index">03</span><span class="benefit-text" style="font-size:44px">45,000MAH CAPACIDAD REAL</span></div></div></section>
+<section id="s3" class="scene clip " data-start="16.405" data-duration="7.706" data-track-index="0"><div class="s3-price-hero"><div class="s3-price-row"><div id="old" class="old">ANTES $994</div><div id="discount" class="discount">MÁS DEL 70% OFF</div></div><div id="amount" class="amount" style="font-size:220px">$280</div><div class="s3-savings-banner">🔥 TE AHORRAS $714 PESOS EN MERCADO LIBRE</div></div><div class="product-stage stage-s3" id="p3"><img class="product" src="public/product.png" alt="Power Bank 45000mah Batería Portátil Pila 66w Carga Rápida"><div class="stage-floating-tag"><img class="meli-icon" src="public/meli_handshake.png" alt="ML"><span>ENVÍO RÁPIDO · MERCADO LIBRE</span></div></div></section>
+<section id="s4" class="scene clip yellow" data-start="24.111" data-duration="5.888999999999999" data-track-index="0"><div class="s4-header"><div class="s4-kicker">OFERTA EN MERCADO LIBRE · $280 (+70% OFF)</div><h2 class="s4-headline"><span id="cta1">¡Para eso</span> <span id="cta2">trabajo!</span></h2></div><div class="product-stage stage-s4" id="p4"><img class="product" src="public/product.png" alt="Power Bank 45000mah Batería Portátil Pila 66w Carga Rápida"></div><div id="button" class="button"><div class="button-left"><img class="meli-icon" src="public/meli_handshake.png" alt="ML"><span>COMPRA EN MERCADO LIBRE · LINK EN BIO</span></div><span class="button-arrow">↗</span></div></section>
+<div class="brand"><div><span>para eso</span><span>trabajo.</span></div><div class="meli-header-pill"><img class="meli-logo-full" src="public/meli_logo_full.png" alt="Mercado Libre"></div></div>
+<div class="captions"><p id="c0" class="caption" style="font-size:33px">🚨 ¡MÁS DEL 70% DE DESCUENTO en Mercado Libre! Solo $280 MXN</p><p id="c1" class="caption" style="font-size:33px">⚡ Qué es y qué hace: potencia real, máxima capacidad y listo para usar.</p><p id="c2" class="caption" style="font-size:33px">💥 De $994 a solo $280 MXN en Mercado Libre (¡Más del 70% de descuento!)</p><p id="c3" class="caption" style="font-size:33px">👇 Compra en Mercado Libre desde el link en descripción o bio. ¡Para eso trabajo!</p></div>
 <div id="progress" class="line"></div>
-<audio id="voice" class="clip" src="public/voice.mp3" data-start="0" data-duration="29.208" data-track-index="2" data-volume="1"></audio><audio id="music" class="clip" src="public/music_electrodoodle.mp3" data-start="0" data-duration="31" data-track-index="3" data-volume="0.1" data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;volume&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.6,&quot;v&quot;:0.1},{&quot;t&quot;:29.208,&quot;v&quot;:0.1},{&quot;t&quot;:30.95,&quot;v&quot;:0}]}]}"></audio><audio id="sfx0" class="clip" src="public/sfx/whoosh.mp3" data-start="8.496" data-duration="0.35" data-track-index="4" data-volume="0.22"></audio><audio id="sfx1" class="clip" src="public/sfx/pop.mp3" data-start="15.384" data-duration="0.08" data-track-index="5" data-volume="0.22"></audio><audio id="sfx2" class="clip" src="public/sfx/ding.mp3" data-start="23.543999999999997" data-duration="0.6" data-track-index="6" data-volume="0.22"></audio>
+<audio id="voice" class="clip" src="public/voice.mp3" data-start="0" data-duration="28.709" data-track-index="2" data-volume="1"></audio><audio id="music" class="clip" src="public/music_electrodoodle.mp3" data-start="0" data-duration="30" data-track-index="3" data-volume="0.1" data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;volume&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.4,&quot;v&quot;:0.1},{&quot;t&quot;:28.709,&quot;v&quot;:0.1},{&quot;t&quot;:29.95,&quot;v&quot;:0}]}]}"></audio><audio id="sfx0" class="clip" src="public/sfx/whoosh.mp3" data-start="7.889" data-duration="0.35" data-track-index="4" data-volume="0.22"></audio><audio id="sfx1" class="clip" src="public/sfx/pop.mp3" data-start="16.805" data-duration="0.08" data-track-index="5" data-volume="0.22"></audio><audio id="sfx2" class="clip" src="public/sfx/ding.mp3" data-start="24.611" data-duration="0.6" data-track-index="6" data-volume="0.22"></audio>
 </div>
 <script>
 const tl=gsap.timeline({paused:true});
-tl.fromTo('#progress',{scaleX:0},{scaleX:1,duration:31,ease:'none'},0);
-tl.fromTo('#hook',{y:30,opacity:0},{y:0,opacity:1,duration:.5,ease:'power3.out'},0);
-tl.fromTo('#p1',{opacity:.7,y:18},{opacity:1,y:0,duration:.5,ease:'power3.out'},0);
-tl.fromTo('#p2',{opacity:.7,y:18},{opacity:1,y:0,duration:.5,ease:'power3.out'},8.496);
-tl.fromTo('#p3',{opacity:.7,y:18},{opacity:1,y:0,duration:.5,ease:'power3.out'},14.784);
-tl.fromTo('#p4',{opacity:.7,y:18},{opacity:1,y:0,duration:.5,ease:'power3.out'},22.823999999999998);
-tl.fromTo('#benefit0',{opacity:0,y:20},{opacity:1,y:0,duration:.4,ease:'power3.out'},8.496);
-tl.fromTo('#benefit1',{opacity:0,y:20},{opacity:1,y:0,duration:.4,ease:'power3.out'},9.396);
-tl.fromTo('#benefit2',{opacity:0,y:20},{opacity:1,y:0,duration:.4,ease:'power3.out'},10.296000000000001);
-tl.fromTo('#old',{opacity:0},{opacity:1,duration:.3},14.784);
-tl.fromTo('#amount',{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'power3.out'},15.384);
-tl.fromTo('#discount',{opacity:0,y:15},{opacity:1,y:0,duration:.35},15.784);
-tl.fromTo(['#cta1','#cta2'],{opacity:0,y:40},{opacity:1,y:0,duration:.62,ease:'power3.out',stagger:.1},22.823999999999998);
-tl.fromTo('#button',{opacity:0,scale:.9,y:20},{opacity:1,scale:1,y:0,duration:.6,ease:'back.out(1.5)'},23.543999999999997);
-tl.fromTo('#c0',{opacity:0},{opacity:1,duration:.15},0.15);tl.to('#c0',{opacity:0,duration:.12},8.376000000000001);
-tl.fromTo('#c1',{opacity:0},{opacity:1,duration:.15},8.646);tl.to('#c1',{opacity:0,duration:.12},14.664000000000001);
-tl.fromTo('#c2',{opacity:0},{opacity:1,duration:.15},14.934000000000001);tl.to('#c2',{opacity:0,duration:.12},22.703999999999997);
-tl.fromTo('#c3',{opacity:0},{opacity:1,duration:.15},22.973999999999997);tl.to('#c3',{opacity:0,duration:.12},29.087999999999997);
+tl.fromTo('#progress',{scaleX:0},{scaleX:1,duration:30,ease:'none'},0);
+tl.fromTo('#hook',{scale:0.82,opacity:0},{scale:1,opacity:1,duration:.38,ease:'back.out(1.8)'},0);
+tl.fromTo('#p1',{scale:.92,opacity:.75,y:24},{scale:1,opacity:1,y:0,duration:.45,ease:'power3.out'},0);
+tl.fromTo('#p2',{scale:.92,opacity:.75,y:24},{scale:1,opacity:1,y:0,duration:.45,ease:'power3.out'},7.889);
+tl.fromTo('#p3',{scale:.92,opacity:.75,y:24},{scale:1,opacity:1,y:0,duration:.45,ease:'power3.out'},16.405);
+tl.fromTo('#p4',{scale:.92,opacity:.75,y:24},{scale:1,opacity:1,y:0,duration:.45,ease:'power3.out'},24.111);
+tl.fromTo('#benefit0',{opacity:0,x:-35},{opacity:1,x:0,duration:.35,ease:'power3.out'},7.889);
+tl.fromTo('#benefit1',{opacity:0,x:-35},{opacity:1,x:0,duration:.35,ease:'power3.out'},8.539);
+tl.fromTo('#benefit2',{opacity:0,x:-35},{opacity:1,x:0,duration:.35,ease:'power3.out'},9.189);
+tl.fromTo('#old',{opacity:0,y:-10},{opacity:1,y:0,duration:.25},16.405);
+tl.fromTo('#amount',{opacity:0,scale:.85,y:25},{opacity:1,scale:1,y:0,duration:.4,ease:'back.out(1.6)'},16.805);
+tl.fromTo('#discount',{opacity:0,scale:.85},{opacity:1,scale:1,duration:.3,ease:'back.out(1.6)'},16.505000000000003);
+tl.fromTo(['#cta1','#cta2'],{opacity:0,y:30},{opacity:1,y:0,duration:.45,ease:'power3.out',stagger:.08},24.111);
+tl.fromTo('#button',{opacity:0,scale:.88,y:20},{opacity:1,scale:1,y:0,duration:.45,ease:'back.out(1.7)'},24.511);
+tl.fromTo('#c0',{opacity:0,y:8},{opacity:1,y:0,duration:.14},0.1);tl.to('#c0',{opacity:0,duration:.1},7.789000000000001);
+tl.fromTo('#c1',{opacity:0,y:8},{opacity:1,y:0,duration:.14},7.989);tl.to('#c1',{opacity:0,duration:.1},16.305);
+tl.fromTo('#c2',{opacity:0,y:8},{opacity:1,y:0,duration:.14},16.505000000000003);tl.to('#c2',{opacity:0,duration:.1},24.011);
+tl.fromTo('#c3',{opacity:0,y:8},{opacity:1,y:0,duration:.14},24.211000000000002);tl.to('#c3',{opacity:0,duration:.1},28.608999999999998);
 window.__timelines=window.__timelines||{};window.__timelines['main']=tl;
 </script></body></html>

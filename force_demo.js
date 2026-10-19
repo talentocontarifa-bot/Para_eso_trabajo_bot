@@ -44,9 +44,27 @@ async function publishPostNow(copyText, mediaFbid) {
 
 // Jina extraction and url resolving functions removed. Replaced by scrapeProduct.
 
+async function postFirstComment(postId, productUrl) {
+    try {
+        const url = `https://graph.facebook.com/v20.0/${postId}/comments`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: `🛍️ Enlace directo a la oferta en Mercado Libre:\n${productUrl}`,
+                access_token: META_PAGE_ACCESS_TOKEN
+            })
+        });
+        const data = await res.json();
+        if (data.id) console.log(`💬 Primer comentario con link clickeable publicado: ${data.id}`);
+    } catch (e) {
+        console.warn(`⚠️ No se pudo publicar el primer comentario: ${e.message}`);
+    }
+}
+
 async function generateCopy(issue, productUrl, productMarkdown) {
-    const prompt = `Eres un copywriter experto en marketing de afiliados con estilo directo y persuasivo.
-Crea un post corto para Facebook promocionando el siguiente producto de Mercado Libre.
+    const prompt = `Eres un copywriter de respuesta directa agresivo y experto en ventas de afiliados para "Para eso trabajo".
+Crea un post de Facebook ULTRA VENDEDOR, directo al grano y sin rodeos promocionando este producto de Mercado Libre.
 
 Aquí tienes la información real del producto extraída de la página web (Markdown):
 ${productMarkdown ? productMarkdown : "No se pudo extraer información directa del producto."}
@@ -54,14 +72,21 @@ ${productMarkdown ? productMarkdown : "No se pudo extraer información directa d
 Título/Comentario sugerido por el usuario: "${issue.title}"
 Comentario adicional en el issue: "${issue.body || 'Sin descripción adicional'}"
 
-REGLAS DE REDACCIÓN SUPER ESTRICTAS:
-1. Lo PRIMERO que debe verse en el post es el PRECIO ACTUAL, el PRECIO ORIGINAL y el DESCUENTO (si lo hay), todo extraído ÚNICAMENTE de la información real de arriba.
-2. Si la información real (Markdown) NO contiene el precio, NO LO INVENTES. En su lugar, usa una frase ganadora como "¡Checa el precio de locura en el link!" o similar. ESTÁ ESTRICTAMENTE PROHIBIDO HALLUCINAR O INVENTAR NÚMEROS O PRECIOS.
-3. El copy de venta no debe superar 1 PÁRRAFO de extensión. Sé extremadamente conciso.
-4. Usa emojis seleccionados para hacerlo visualmente atractivo y generar urgencia o deseo (ej. 🔥, ⚡, 📦).
-5. MUY IMPORTANTE: DEBES INCLUIR el siguiente link de compra exactamente en el texto final: ${productUrl}
+ESTRUCTURA OBLIGATORIA Y AGRESIVA (EN ESTE ORDEN EXACTO):
+1. GOLPE INMEDIATO DE DESCUENTO, PRODUCTO Y PRECIO (Líneas 1 y 2):
+   - Línea 1: 🚨 ¡BAJÓ [DESCUENTO]! [NOMBRE CORTO Y CLARO DE QUÉ ES EL PRODUCTO]
+   - Línea 2: 💥 HOY: [PRECIO ACTUAL] (Antes [PRECIO ORIGINAL] — ¡Te ahorras $[AHORRO]!) extraído ÚNICAMENTE de la información real. Si NO viene el precio en los datos reales, NO LO INVENTES y pon: "💥 ¡PRECIO DE REMATE POR TIEMPO LIMITADO!".
+2. LINK CLICKEABLE ARRIBA DEL CORTE (Línea 3):
+   - Línea 3: 👉 Cómpralo aquí: ${productUrl}
+3. QUÉ ES Y QUÉ HACE (Directo, concreto, sin rollo suave):
+   - Explica en 2 líneas contundentes QUÉ ES exactamente el producto, QUÉ HACE (potencia, capacidad, material, función real) y agrega 3 bullets cortos con ✅ de sus especificaciones o beneficios más fuertes.
+4. CIERRE DE URGENCIA CON SEGUNDO LINK CLICKEABLE:
+   - Cierra con:
+   🔥 A este precio vuela. ¡Date el gusto, que para eso trabajas!
+   🛒 Link directo a Mercado Libre:
+   ${productUrl}
 
-Solo devuelve el texto final del post (asegúrate de que el link esté ahí), sin notas adicionales ni explicaciones.`;
+Solo devuelve el texto final del post listo para publicar, sin notas adicionales ni bloques markdown.`;
 
     // 1. Intentar con Groq si está disponible
     if (process.env.GROQ_API_KEY) {
@@ -106,7 +131,7 @@ Solo devuelve el texto final del post (asegúrate de que el link esté ahí), si
     console.log(`🧠 Generando copy con Gemini...`);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
-    return result.response.text();
+    return result.response.text().trim();
 }
 
 async function main() {
@@ -138,7 +163,7 @@ async function main() {
     
     let imageUrl = scrapeResult.imageUrl;
     let mediaFbid = null;
-    if (imageUrl) {
+    if (imageUrl && !process.argv.includes('--dry-run')) {
         console.log(`🖼️ Imagen extraída: ${imageUrl}`);
         try {
             mediaFbid = await uploadUnpublishedPhoto(imageUrl);
@@ -161,12 +186,17 @@ async function main() {
 
     console.log(`🧠 Generando copy con IA...`);
     let copyText = await generateCopy(issue, productUrl, productMarkdown);
-    copyText = `[PRUEBA DE REDACCIÓN NUEVA]\n\n${copyText}`; 
 
     console.log(`📝 COPY GENERADO EXITOSAMENTE:\n-----------------\n${copyText}\n-----------------\n`);
 
+    if (process.argv.includes('--dry-run')) {
+        console.log(`ℹ️ Modo --dry-run activo: no se publicó en Facebook.`);
+        return;
+    }
+
     const postId = await publishPostNow(copyText, mediaFbid);
     console.log(`✅ ¡Post DEMO publicado exitosamente! ID: ${postId}`);
+    await postFirstComment(postId, productUrl);
 }
 
 main().catch(console.error);

@@ -6,8 +6,24 @@ const { scrapeProduct } = require('./scraper');
 require('dotenv').config();
 
 const META_PAGE_ID = process.env.META_PAGE_ID || process.env.PAGE_ID;
-const META_PAGE_ACCESS_TOKEN = process.env.META_PAGE_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
+let META_PAGE_ACCESS_TOKEN = process.env.FACEBOOK_PAGE_ACCESS_TOKEN || process.env.META_PAGE_ACCESS_TOKEN || process.env.PAGE_ACCESS_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+let resolvedPageToken = null;
+async function getPageAccessToken() {
+    if (resolvedPageToken) return resolvedPageToken;
+    if (!META_PAGE_ID || !META_PAGE_ACCESS_TOKEN) return META_PAGE_ACCESS_TOKEN;
+    try {
+        const res = await fetch(`https://graph.facebook.com/v21.0/${META_PAGE_ID}?fields=access_token&access_token=${META_PAGE_ACCESS_TOKEN}`);
+        const data = await res.json();
+        if (data && data.access_token) {
+            resolvedPageToken = data.access_token;
+            return resolvedPageToken;
+        }
+    } catch (e) {}
+    resolvedPageToken = META_PAGE_ACCESS_TOKEN;
+    return resolvedPageToken;
+}
 
 // Inicializa Gemini
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -39,14 +55,15 @@ function getScheduledTime(hourStr) {
 // extractOgImage removed. Scraper module extracts image directly.
 
 async function uploadUnpublishedPhoto(imageUrl) {
-    const url = `https://graph.facebook.com/v25.0/${META_PAGE_ID}/photos`;
+    const pageToken = await getPageAccessToken();
+    const url = `https://graph.facebook.com/v21.0/${META_PAGE_ID}/photos`;
     const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             url: imageUrl,
             published: false,
-            access_token: META_PAGE_ACCESS_TOKEN
+            access_token: pageToken
         })
     });
     
@@ -58,12 +75,13 @@ async function uploadUnpublishedPhoto(imageUrl) {
 }
 
 async function schedulePost(copyText, mediaFbid, scheduledTime) {
-    const url = `https://graph.facebook.com/v25.0/${META_PAGE_ID}/feed`;
+    const pageToken = await getPageAccessToken();
+    const url = `https://graph.facebook.com/v21.0/${META_PAGE_ID}/feed`;
     const payload = {
         message: copyText,
         published: false,
         scheduled_publish_time: scheduledTime,
-        access_token: META_PAGE_ACCESS_TOKEN
+        access_token: pageToken
     };
 
     if (mediaFbid) {
@@ -113,8 +131,8 @@ async function generateCopy(issue, productUrl, productMarkdown) {
         ? "\nNOTA DE ÁNGULO: Este es un producto con descuento que sigue disponible. Usa un gancho fresco y directo (ej: '¡Sigue en oferta!', 'Por si te lo perdiste', 'Sigue la rebaja').\n"
         : "";
 
-    const prompt = `Eres un copywriter experto en marketing de afiliados con estilo directo y persuasivo.
-Crea un post corto para Facebook promocionando el siguiente producto de Mercado Libre.
+    const prompt = `Eres un copywriter de respuesta directa agresivo y experto en ventas de afiliados para "Para eso trabajo".
+Crea un post de Facebook ULTRA VENDEDOR, directo al grano y sin rodeos promocionando este producto de Mercado Libre.
 ${isRecycledHint}
 Aquí tienes la información real del producto extraída de la página web (Markdown):
 ${productMarkdown ? productMarkdown : "No se pudo extraer información directa del producto."}
@@ -122,14 +140,21 @@ ${productMarkdown ? productMarkdown : "No se pudo extraer información directa d
 Título/Comentario sugerido por el usuario: "${issue.title}"
 Comentario adicional en el issue: "${issue.body || 'Sin descripción adicional'}"
 
-REGLAS DE REDACCIÓN SUPER ESTRICTAS:
-1. Lo PRIMERO que debe verse en el post es el PRECIO ACTUAL, el PRECIO ORIGINAL y el DESCUENTO (si lo hay), todo extraído ÚNICAMENTE de la información real de arriba.
-2. Si la información real (Markdown) NO contiene el precio, NO LO INVENTES. En su lugar, usa una frase ganadora como "¡Checa el precio de locura en el link!" o similar. ESTÁ ESTRICTAMENTE PROHIBIDO HALLUCINAR O INVENTAR NÚMEROS O PRECIOS.
-3. El copy de venta no debe superar 1 PÁRRAFO de extensión. Sé extremadamente conciso.
-4. Usa emojis seleccionados para hacerlo visualmente atractivo y generar urgencia o deseo (ej. 🔥, ⚡, 📦).
-5. MUY IMPORTANTE: DEBES INCLUIR el siguiente link de compra exactamente en el texto final: ${productUrl}
+ESTRUCTURA OBLIGATORIA Y AGRESIVA (EN ESTE ORDEN EXACTO):
+1. GOLPE INMEDIATO DE DESCUENTO, PRODUCTO Y PRECIO (Líneas 1 y 2):
+   - Línea 1: 🚨 ¡BAJÓ [DESCUENTO]! [NOMBRE CORTO Y CLARO DE QUÉ ES EL PRODUCTO]
+   - Línea 2: 💥 HOY: [PRECIO ACTUAL] (Antes [PRECIO ORIGINAL] — ¡Te ahorras $[AHORRO]!) extraído ÚNICAMENTE de la información real. Si NO viene el precio en los datos reales, NO LO INVENTES y pon: "💥 ¡PRECIO DE REMATE POR TIEMPO LIMITADO!".
+2. LINK CLICKEABLE ARRIBA DEL CORTE (Línea 3):
+   - Línea 3: 👉 Cómpralo aquí: ${productUrl}
+3. QUÉ ES Y QUÉ HACE (Directo, concreto, sin rollo suave):
+   - Explica en 2 líneas contundentes QUÉ ES exactamente el producto, QUÉ HACE (potencia, capacidad, material, función real) y agrega 3 bullets cortos con ✅ de sus especificaciones o beneficios más fuertes.
+4. CIERRE DE URGENCIA CON SEGUNDO LINK CLICKEABLE:
+   - Cierra con:
+   🔥 A este precio vuela. ¡Date el gusto, que para eso trabajas!
+   🛒 Link directo a Mercado Libre:
+   ${productUrl}
 
-Solo devuelve el texto final del post (asegúrate de que el link esté ahí), sin notas adicionales ni explicaciones.`;
+Solo devuelve el texto final del post listo para publicar, sin notas adicionales ni bloques markdown.`;
 
     // 1. Intentar con Groq si está disponible
     if (process.env.GROQ_API_KEY) {

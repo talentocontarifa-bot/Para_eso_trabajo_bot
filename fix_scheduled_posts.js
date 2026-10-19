@@ -65,22 +65,29 @@ async function schedulePost(copyText, mediaFbid, scheduledTime) {
 
 // 4. Generación de Copy
 async function generateCopy(title, productUrl, productMarkdown) {
-    const prompt = `Eres un copywriter experto en marketing de afiliados con estilo directo y persuasivo.
-Crea un post corto para Facebook promocionando el siguiente producto de Mercado Libre.
+    const prompt = `Eres un copywriter experto en marketing de afiliados y ventas directas para la marca "Para eso trabajo".
+Crea un post altamente efectivo para vender en Facebook promocionando el siguiente producto de Mercado Libre.
 
 Aquí tienes la información real del producto extraída de la página web (Markdown):
 ${productMarkdown ? productMarkdown : "No se pudo extraer información directa del producto."}
 
 Título/Comentario sugerido por el usuario: "${title}"
 
-REGLAS DE REDACCIÓN SUPER ESTRICTAS:
-1. Lo PRIMERO que debe verse en el post es el PRECIO ACTUAL, el PRECIO ORIGINAL y el DESCUENTO (si lo hay), todo extraído ÚNICAMENTE de la información real de arriba.
-2. Si la información real (Markdown) NO contiene el precio, NO LO INVENTES. En su lugar, usa una frase ganadora como "¡Checa el precio de locura en el link!" o similar. ESTÁ ESTRICTAMENTE PROHIBIDO HALLUCINAR O INVENTAR NÚMEROS O PRECIOS.
-3. El copy de venta no debe superar 1 PÁRRAFO de extensión. Sé extremadamente conciso.
-4. Usa emojis seleccionados para hacerlo visualmente atractivo y generar urgencia o deseo (ej. 🔥, ⚡, 📦).
-5. MUY IMPORTANTE: DEBES INCLUIR el siguiente link de compra exactamente en el texto final: ${productUrl}
+ESTRUCTURA OBLIGATORIA Y ESTRICTA DEL POST (EN ESTE ORDEN EXACTO):
+1. ENCABEZADO DE IMPACTO (Líneas 1 y 2):
+   - Línea 1: 🔥 [NOMBRE CORTO Y CLARO DEL PRODUCTO] (nunca omitas qué producto es en la primera línea).
+   - Línea 2: 💰 [PRECIO ACTUAL] (Antes [PRECIO ORIGINAL] — ¡[DESCUENTO]!) extraído ÚNICAMENTE de la información real. Si NO viene el precio en los datos reales, NO LO INVENTES y pon: "💰 ¡Precio de locura por tiempo limitado!".
+2. LINK CLICKEABLE ARRIBA DEL CORTE (Línea 3):
+   - Línea 3: 👉 Cómpralo aquí: ${productUrl}
+   (Debe ir antes del párrafo para que sea visible y clickeable sin tener que tocar "Ver más").
+3. EL CHORO PERSUASIVO (Párrafo central):
+   - Después de una línea en blanco, escribe 1 PÁRRAFO corto, directo, con chispa mexicana y muy antojador explicando por qué vale cada peso y qué problema resuelve o qué gusto da tenerlo.
+4. CIERRE CON SEGUNDO LINK CLICKEABLE:
+   - Cierra con una línea final invitando a aprovechar el stock y pon el link solo en su propia línea:
+   🛒 Aprovecha la oferta aquí:
+   ${productUrl}
 
-Solo devuelve el texto final del post (asegúrate de que el link esté ahí), sin notas adicionales ni explicaciones.`;
+Solo devuelve el texto final del post listo para publicar, sin notas adicionales ni bloques markdown.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);

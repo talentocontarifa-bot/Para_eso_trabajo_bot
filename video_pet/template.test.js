@@ -5,7 +5,8 @@ const config=require('./template.config.json');
 const sample=require('./src/deal_data.json');
 test('timings follow concatenated voice instead of artificial pauses',()=>{
  const r=compile(sample,config);assert.equal(r.starts[1],sample.scenes[0].audio_duration);
- assert.ok(Math.abs(r.voiceDuration-29.208)<.001);
+ const expectedDur=sample.scenes.reduce((acc,s)=>acc+Number(s.audio_duration),0);
+ assert.ok(Math.abs(r.voiceDuration-expectedDur)<.001);
  assert.ok(r.audio.includes('id="music"'));assert.ok(r.audio.includes('id="sfx2"'));
 });
 test('long names and large prices remain data; HTML is escaped',()=>{

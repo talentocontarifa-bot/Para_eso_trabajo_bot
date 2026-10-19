@@ -1,64 +1,63 @@
 window.DEAL_DATA = {
   "theme_color": "#FFE600",
-  "product_title": "Sony WH-1000XM5 Noise Cancelling",
-  "discount_percentage": 40,
-  "original_price": "8,999.00",
-  "offer_price": "5,399.00",
+  "product_title": "Power Bank 45000mah Batería Portátil Pila 66w Carga Rápida",
+  "discount_percentage": 71,
+  "original_price": "994",
+  "offer_price": "280",
+  "sales_pitch": "Este Power Bank de 45,000mAh y carga rápida 66W es tu solución definitiva para no quedarte sin batería, capaz de cargar tu celular hasta 10 veces. Con más del 70% de descuento en Mercado Libre, de $994 a solo $280 pesos, esta es una ganga brutal que no puedes dejar pasar.",
   "key_points": [
-    "Cancelación de Ruido Líder",
-    "30 Horas de Batería y Carga Rápida",
-    "Sonido Hi-Res con DSEE Extreme"
+    "CARGA ULTRA RÁPIDA 66W",
+    "HASTA 10 CARGAS CELULAR",
+    "45,000MAH CAPACIDAD REAL"
+  ],
+  "scenes": [
+    {
+      "type": "title",
+      "text1": "+70% OFF",
+      "text2": "$280 MXN",
+      "voice_text": "¡Más del 70% de descuento en Mercado Libre! Power Bank 45000mAh, solo $280 pesos.",
+      "subtitle": "🚨 ¡MÁS DEL 70% DE DESCUENTO en Mercado Libre! Solo $280 MXN",
+      "start": 0,
+      "audio_duration": 7.889,
+      "end": 7.889
+    },
+    {
+      "type": "product",
+      "product_title": "Power Bank 45000mah Batería Portátil Pila 66w Carga Rápida",
+      "key_points": [
+        "CARGA ULTRA RÁPIDA 66W",
+        "HASTA 10 CARGAS CELULAR",
+        "45,000MAH CAPACIDAD REAL"
+      ],
+      "voice_text": "Es una batería portátil de 45,000mAh y 66W. Carga tu celular ¡hasta 10 veces rápido!",
+      "subtitle": "⚡ Qué es y qué hace: potencia real, máxima capacidad y listo para usar.",
+      "start": 7.889,
+      "audio_duration": 8.516,
+      "end": 16.405
+    },
+    {
+      "type": "price",
+      "discount_percentage": 71,
+      "original_price": "994",
+      "offer_price": "280",
+      "voice_text": "De $994 baja a $280 en Mercado Libre. ¡Ahorras $714 pesos de golpe!",
+      "subtitle": "De $994 a solo $280 MXN. ¡71% de descuento!",
+      "start": 16.405,
+      "audio_duration": 7.706,
+      "end": 24.111
+    },
+    {
+      "type": "cta",
+      "headline": "¡PARA ESO TRABAJO!",
+      "voice_text": "Compra seguro en Mercado Libre desde el link ahora. ¡Para eso trabajo!",
+      "subtitle": "👇 Compra en Mercado Libre desde el link en descripción o bio. ¡Para eso trabajo!",
+      "start": 24.111,
+      "audio_duration": 4.598,
+      "end": 28.709
+    }
   ],
   "total_duration_sec": 30,
   "total_frames": 900,
-  "scenes": [
-    {
-      "id": "scene_1",
-      "type": "title",
-      "text1": "SUPER OFERTA",
-      "text2": "SONY WH-1000XM5",
-      "voice_text": "¡Atención compradores! Encontramos un ofertón irresistible en Mercado Libre para los audífonos Sony WH-1000XM5.",
-      "subtitle": "¡Super oferta en Mercado Libre! Sony WH-1000XM5.",
-      "start": 0.0,
-      "audio_duration": 8.496,
-      "end": 8.496
-    },
-    {
-      "id": "scene_2",
-      "type": "product",
-      "product_title": "Sony WH-1000XM5 Noise Cancelling",
-      "key_points": [
-        "Cancelación de Ruido Líder",
-        "30 Horas de Batería y Carga Rápida",
-        "Sonido Hi-Res con DSEE Extreme"
-      ],
-      "voice_text": "Cuentan con la mejor cancelación de ruido de la industria, treinta horas continuas de batería y envío rápido FULL.",
-      "subtitle": "Cancelación de ruido líder, 30h de batería y envío FULL.",
-      "start": 8.676,
-      "audio_duration": 6.288,
-      "end": 14.964
-    },
-    {
-      "id": "scene_3",
-      "type": "price",
-      "discount_percentage": 40,
-      "original_price": "8,999.00",
-      "offer_price": "5,399.00",
-      "voice_text": "Bajan de ocho mil novecientos noventa y nueve a solo cinco mil trescientos noventa y nueve pesos. ¡Un cuarenta por ciento de descuento!",
-      "subtitle": "De $8,999 a solo $5,399 pesos. ¡40% de descuento!",
-      "start": 15.144,
-      "audio_duration": 8.04,
-      "end": 23.184
-    },
-    {
-      "id": "scene_4",
-      "type": "cta",
-      "headline": "¡LINK EN BIO!",
-      "voice_text": "¡Para eso trabajo! Consigue los tuyos antes de que se agoten tocando el enlace directo en nuestro perfil.",
-      "subtitle": "¡Para eso trabajo! Toca el enlace en nuestra bio.",
-      "start": 23.364,
-      "audio_duration": 6.384,
-      "end": 29.748
-    }
-  ]
+  "affiliate_link": "https://meli.la/2HJ9Yvt",
+  "issue_number": null
 };
