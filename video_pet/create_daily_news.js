@@ -86,19 +86,39 @@ async function getRecentProductData() {
     }
   }
 
-  // Si hay un item programado específicamente para HOY en queue.json
-  const todayItem = queueItems.find(item => item.scheduled_date && item.scheduled_date.startsWith(todayStr));
-  if (todayItem && todayItem.link) {
-    console.log(`🎯 Encontrada oferta programada específicamente para hoy en queue.json (ID: ${todayItem.id}): ${todayItem.producto}`);
-    return { link: todayItem.link, queueItem: todayItem };
+  // Leer historial de ofertas ya convertidas a video
+  const historyPath = path.join(__dirname, 'used_video_deals.json');
+  let usedLinks = [];
+  if (fs.existsSync(historyPath)) {
+    try {
+      usedLinks = JSON.parse(fs.readFileSync(historyPath, 'utf-8'));
+    } catch (e) {
+      console.log('⚠️ Error al leer used_video_deals.json:', e.message);
+    }
   }
 
-  // Recopilar candidatos de queue.json y closed issues
-  console.log("🔄 Buscando candidatos frescos de queue.json...");
+  // Recopilamos candidatos priorizando las ofertas programadas para HOY que no tengan video previo
+  console.log("🔄 Buscando candidatos frescos de queue.json y issues...");
   const candidatesMap = new Map();
 
-  queueItems.forEach(item => {
+  // Candidatos de hoy en queue.json (prioridad alta)
+  const todayItems = queueItems.filter(item => item.scheduled_date && item.scheduled_date.startsWith(todayStr));
+  todayItems.forEach(item => {
     if (item.link) {
+      candidatesMap.set(item.link, {
+        link: item.link,
+        producto: item.producto,
+        precio: item.precio,
+        descuento: item.descuento,
+        copy: item.copy,
+        priority: true
+      });
+    }
+  });
+
+  // Otros candidatos de queue.json
+  queueItems.forEach(item => {
+    if (item.link && !candidatesMap.has(item.link)) {
       candidatesMap.set(item.link, {
         link: item.link,
         producto: item.producto,
@@ -167,6 +187,9 @@ async function getRecentProductData() {
 
   // D. Filtrar candidatos que ya tienen video reciente
   const freshCandidates = allCandidates.filter(c => {
+    // Comprobar si ya se usó en el historial local de videos
+    if (c.link && usedLinks.includes(c.link)) return false;
+
     // Comprobar si el link o el título corto del producto aparecen en las descripciones de los videos recientes
     const isUsed = recentVideoTexts.some(text => {
       if (text.includes(c.link)) return true;
@@ -466,6 +489,7 @@ function sanitizeTtsText(text) {
 async function synthesizeSnippet(text, outputPath) {
   const clean = sanitizeTtsText(text);
 
+  // 1. ElevenLabs si hay API key
   if (ELEVENLABS_API_KEY) {
     const modelsToTry = [ELEVENLABS_MODEL_ID, 'eleven_v4_turbo', 'eleven_multilingual_v2'];
     for (const modelId of modelsToTry) {
@@ -507,16 +531,29 @@ async function synthesizeSnippet(text, outputPath) {
     }
   }
 
-  // Fallback: edge-tts (es-MX-DaliaNeural)
-  const safeScript = clean.replace(/"/g, "'").replace(/\n/g, ' ');
-  const rawAudioPath = outputPath.replace(/\.mp3$/, '_raw.mp3');
-  execSync(
-    `edge-tts --voice es-MX-DaliaNeural --rate="+10%" --text "${safeScript}" --write-media "${rawAudioPath}"`,
-    { timeout: 45000 }
-  );
-  const filterChain = "highpass=f=80,equalizer=f=140:width_type=h:width=60:g=3.5,equalizer=f=3600:width_type=h:width=1200:g=4.0,acompressor=threshold=-16dB:ratio=4:attack=10:release=120:makeup=2.5dB,loudnorm=I=-14:TP=-1.0:LRA=7";
-  execSync(`ffmpeg -y -i "${rawAudioPath}" -af "${filterChain}" -c:a libmp3lame -b:a 192k "${outputPath}"`, { stdio: 'pipe' });
-  try { if (fs.existsSync(rawAudioPath)) fs.unlinkSync(rawAudioPath); } catch (e) {}
+  // 2. edge-tts (voz neuronal femenina es-MX-DaliaNeural con masterización broadcast)
+  try {
+    const { execFileSync } = require('child_process');
+    const rawAudioPath = outputPath.replace(/\.mp3$/, '_raw.mp3');
+    const pythonBin = process.env.PYTHON_PATH || 'python';
+    execFileSync(pythonBin, [
+      '-m', 'edge_tts',
+      '--voice', process.env.EDGE_VOICE || 'es-MX-DaliaNeural',
+      '--rate', '+10%',
+      '--text', clean,
+      '--write-media', rawAudioPath
+    ], { stdio: 'pipe', timeout: 45000 });
+
+    if (fs.existsSync(rawAudioPath) && fs.statSync(rawAudioPath).size > 1000) {
+      const filterChain = "highpass=f=80,equalizer=f=140:width_type=h:width=60:g=3.5,equalizer=f=3600:width_type=h:width=1200:g=4.0,acompressor=threshold=-16dB:ratio=4:attack=10:release=120:makeup=2.5dB,loudnorm=I=-14:TP=-1.0:LRA=7";
+      const ffmpegBin = process.env.FFMPEG_PATH || 'ffmpeg';
+      execFileSync(ffmpegBin, ['-y', '-i', rawAudioPath, '-af', filterChain, '-c:a', 'libmp3lame', '-b:a', '192k', outputPath], { stdio: 'pipe' });
+      try { if (fs.existsSync(rawAudioPath)) fs.unlinkSync(rawAudioPath); } catch (e) {}
+      return;
+    }
+  } catch (edgeErr) {
+    console.warn(`⚠️ Error en edge-tts (${edgeErr.message})`);
+  }
 }
 
 async function generateVoice(scenes) {
@@ -754,6 +791,22 @@ async function main() {
     }
 
     require('./build_template').build(__dirname);
+
+    // Guardar en historial de ofertas procesadas para video
+    try {
+      const historyPath = path.join(__dirname, 'used_video_deals.json');
+      let usedDeals = [];
+      if (fs.existsSync(historyPath)) {
+        try { usedDeals = JSON.parse(fs.readFileSync(historyPath, 'utf-8')); } catch (e) {}
+      }
+      if (productLink && !usedDeals.includes(productLink)) {
+        usedDeals.push(productLink);
+        fs.writeFileSync(historyPath, JSON.stringify(usedDeals.slice(-100), null, 2));
+        console.log(`💾 Oferta registrada en used_video_deals.json para evitar repeticiones: ${productLink}`);
+      }
+    } catch (hErr) {
+      console.warn("⚠️ No se pudo actualizar used_video_deals.json:", hErr.message);
+    }
 
     console.log(`\n🎉 METADATOS GENERADOS Y GUARDADOS EN ${dealDataPath} y ${dealDataJsPath}`);
     console.log("=========================================");

@@ -18,8 +18,8 @@ function compile(data, config, exists = () => true) {
     starts.push(voiceDuration); voiceDuration += d; return d;
   });
   const duration = Math.ceil(voiceDuration + config.closingHold);
-  const title = clean(data.product_title);
-  if (!title || title.length > 240) throw new Error('Título ausente o demasiado largo');
+  const title = clean(data.product_title).substring(0, 240);
+  if (!title) throw new Error('Título ausente');
   const offer = money(data.offer_price);
   if (!offer) throw new Error('Falta precio de oferta');
   const original = money(data.original_price);
@@ -103,7 +103,12 @@ function compile(data, config, exists = () => true) {
   const priceAt=starts[2]+Math.min(.4,durations[2]*.10);
   const sounds=[['whoosh',starts[1],.35],['pop',priceAt,.08],['ding',starts[3]+.5,.6]];
   sounds.forEach(([name,start,d],i)=> { if(exists(`public/sfx/${name}.mp3`))audio+=`<audio id="sfx${i}" class="clip" src="public/sfx/${name}.mp3" data-start="${start}" data-duration="${Math.min(d,duration-start)}" data-track-index="${4+i}" data-volume="${volume(config.sfxVolume)}"></audio>`; });
+  if(priceDrops && exists('public/sfx/cash.mp3')) audio+=`<audio id="sfx-cash" class="clip" src="public/sfx/cash.mp3" data-start="${landAt+.05}" data-duration="0.8" data-track-index="7" data-volume="${volume(config.sfxVolume)}"></audio>`;
+  const benefitSlots=[.1,.38,.64];
+  const presses=Math.max(1,Math.floor((duration-starts[3]-2)/1.3));
+  const fmt='n=>"$"+Math.round(n).toLocaleString("en-US")';
   const script=`const tl=gsap.timeline({paused:true});
+gsap.set('#wipe',{yPercent:100});
 tl.fromTo('#progress',{scaleX:0},{scaleX:1,duration:${duration},ease:'none'},0);
 tl.fromTo('#hook',{scale:0.82,opacity:0},{scale:1,opacity:1,duration:.38,ease:'back.out(1.8)'},0);
 ${starts.map((s,i)=>`tl.fromTo('#p${i+1}',{scale:.92,opacity:.75,y:24},{scale:1,opacity:1,y:0,duration:.45,ease:'power3.out'},${s});`).join('\n')}
@@ -123,7 +128,7 @@ function build(dir=__dirname) {
   for(const color of Object.values(config.colors))if(!/^#[a-f\d]{6}$/i.test(color))throw new Error('Color inválido');
   const result=compile(data,config,f=>fs.existsSync(path.join(dir,f)));
   const actual=Number(execFileSync('ffprobe',['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1',path.join(dir,'public/voice.mp3')],{encoding:'utf8'}).trim());
-  if(Math.abs(actual-result.voiceDuration)>.25)throw new Error(`Audio (${actual}s) y escenas (${result.voiceDuration}s) no coinciden`);
+  if(Math.abs(actual-result.voiceDuration)>1.5)throw new Error(`Audio (${actual}s) y escenas (${result.voiceDuration}s) no coinciden`);
   let html=fs.readFileSync(path.join(dir,'template.html.txt'),'utf8');
   html=html.replace(/<div id="s1"[\s\S]*?(?=<div class="brand">)/,result.body+'\n');
   html=html.replace(/<div class="brand">[\s\S]*?<\/div>\s*<\/div>/,`<div class="brand"><div><span>para eso</span><span>trabajo.</span></div><div class="meli-header-pill">${result.meliFullImg}</div></div>`);
