@@ -103,12 +103,7 @@ function compile(data, config, exists = () => true) {
   const priceAt=starts[2]+Math.min(.4,durations[2]*.10);
   const sounds=[['whoosh',starts[1],.35],['pop',priceAt,.08],['ding',starts[3]+.5,.6]];
   sounds.forEach(([name,start,d],i)=> { if(exists(`public/sfx/${name}.mp3`))audio+=`<audio id="sfx${i}" class="clip" src="public/sfx/${name}.mp3" data-start="${start}" data-duration="${Math.min(d,duration-start)}" data-track-index="${4+i}" data-volume="${volume(config.sfxVolume)}"></audio>`; });
-  if(priceDrops && exists('public/sfx/cash.mp3')) audio+=`<audio id="sfx-cash" class="clip" src="public/sfx/cash.mp3" data-start="${landAt+.05}" data-duration="0.8" data-track-index="7" data-volume="${volume(config.sfxVolume)}"></audio>`;
-  const benefitSlots=[.1,.38,.64];
-  const presses=Math.max(1,Math.floor((duration-starts[3]-2)/1.3));
-  const fmt='n=>"$"+Math.round(n).toLocaleString("en-US")';
   const script=`const tl=gsap.timeline({paused:true});
-gsap.set('#wipe',{yPercent:100});
 tl.fromTo('#progress',{scaleX:0},{scaleX:1,duration:${duration},ease:'none'},0);
 tl.fromTo('#hook',{scale:0.82,opacity:0},{scale:1,opacity:1,duration:.38,ease:'back.out(1.8)'},0);
 ${starts.map((s,i)=>`tl.fromTo('#p${i+1}',{scale:.92,opacity:.75,y:24},{scale:1,opacity:1,y:0,duration:.45,ease:'power3.out'},${s});`).join('\n')}
