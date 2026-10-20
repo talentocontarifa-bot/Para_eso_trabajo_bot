@@ -4,7 +4,8 @@
   "description": "",
   "main": "get_long_token.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "publish:metricool": "node metricool_publisher.js"
   },
   "keywords": [],
   "author": "",
