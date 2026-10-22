@@ -3,9 +3,9 @@ name: Crear Video PET
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 15 * * *'  # 9:00 AM America/Mexico_City (UTC-6) / 10:00 AM Colombia (UTC-5)
-    - cron: '0 20 * * *'  # 2:00 PM America/Mexico_City (UTC-6) / 3:00 PM Colombia (UTC-5)
-    - cron: '0 1 * * *'   # 7:00 PM America/Mexico_City (UTC-6) / 8:00 PM Colombia (UTC-5)
+    - cron: '0 18 * * *'  # 9:00 AM America/Mexico_City (UTC-6) / 10:00 AM Colombia (UTC-5)
+    - cron: '0 23 * * *'  # 2:00 PM America/Mexico_City (UTC-6) / 3:00 PM Colombia (UTC-5)
+    - cron: '0 4 * * *'   # 7:00 PM America/Mexico_City (UTC-6) / 8:00 PM Colombia (UTC-5)
 
 jobs:
   render-video:
